@@ -30,7 +30,6 @@ def calculate_metrics(row):
         clean_gt = " ".join(gt_text.lower().split())
         clean_ret = " ".join(ret_text.lower().split())
         
-        # Threshold: if a significant portion of the GT is in retrieved
         if clean_gt in clean_ret or clean_ret in clean_gt:
             hit = True
             rank = i + 1

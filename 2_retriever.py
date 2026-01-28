@@ -12,7 +12,7 @@ OUTPUT_FILE = "evaluation_set.csv"
 AWS_PROFILE = "sandbox"
 AWS_REGION = "us-east-1"
 SERVICE = "bedrock-agent-runtime"
-KB_ID = "3TPM53DPBN"
+KB_ID = "J7JNHSZPJ3"
 TOP_K = 3
 
 def get_runtime_client():

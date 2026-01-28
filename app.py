@@ -7,16 +7,23 @@ INPUT_FILE = "testset_results.parquet"
 
 st.set_page_config(page_title="RAG Offline Eval", layout="wide")
 
+# In app.py - load_data function
 @st.cache_data
 def load_data():
     try:
-        return pd.read_parquet(INPUT_FILE)
+        df = pd.read_parquet(INPUT_FILE)
+        # Ensure list columns are actual Python lists, not numpy arrays
+        list_cols = ['reference_contexts', 'retrieved_contexts']
+        for col in list_cols:
+            if col in df.columns:
+                df[col] = df[col].apply(lambda x: x.tolist() if hasattr(x, 'tolist') else x)
+        return df
     except FileNotFoundError:
-        st.error("Results file not found. Please run the evaluation pipeline first.")
+        st.error("Results file not found...")
         return pd.DataFrame()
 
 def main():
-    st.title("🔎 RAG Pipeline Evaluation Dashboard")
+    st.title("RAG Pipeline Evaluation Dashboard")
     df = load_data()
     
     if df.empty:
@@ -44,7 +51,7 @@ def main():
     ]
 
     # --- TABS ---
-    tab1, tab2 = st.tabs(["📊 Dashboard", "🧐 Detailed Analysis"])
+    tab1, tab2 = st.tabs(["📊 Dashboard", "Detailed Analysis"])
 
     # --- TAB 1: DASHBOARD ---
     with tab1:
@@ -111,7 +118,7 @@ def main():
             comp_col1, comp_col2 = st.columns(2)
             
             with comp_col1:
-                st.write("#### 📝 Ground Truth Context")
+                st.write("#### Ground Truth Context")
                 # Handle list structure
                 gt_list = row['reference_contexts']
                 if isinstance(gt_list, list) and len(gt_list) > 0:
@@ -120,7 +127,7 @@ def main():
                     st.write(gt_list)
 
             with comp_col2:
-                st.write("#### 🤖 Retrieved Contexts (Top 3)")
+                st.write("#### Retrieved Contexts (Top 3)")
                 retrieved = row['retrieved_contexts']
                 
                 # Check formatting
@@ -130,11 +137,13 @@ def main():
                         gt_txt_clean = " ".join(gt_list[0].lower().split()) if isinstance(gt_list, list) and gt_list else ""
                         is_match = gt_txt_clean in " ".join(txt.lower().split())
                         
-                        emoji = "✅" if is_match else f"{i+1}."
                         color = "green" if is_match else "grey"
                         
                         with st.container(border=True):
-                            st.markdown(f"**{emoji} Rank {i+1}**")
+                            if is_match:
+                                st.markdown(f"**✅ Rank {i+1}**")
+                            else:
+                                st.markdown(f"**Rank {i+1}**")
                             st.text(txt)
                 else:
                     st.write("No retrieval data.")
