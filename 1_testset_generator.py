@@ -27,7 +27,7 @@ OUTPUT_PRICE = 0.0006
 PERSONAS = [
     {
         "name": "El Primerizo Ahorrativo",
-        "desc": "Eres un joven chileno (25-30 años) que quiere comprar su primera vivienda pero tiene pocos ahorros. Tu principal preocupación es el 'Pie' y si puedes usar subsidios (DS1, DS19, FOGAES). No entiendes mucho de términos financieros complejos. Usas un lenguaje cercano, a veces coloquial ('depa', 'luca', 'bancán'), y sueles preguntar '¿qué necesito?' o '¿cómo lo hago?'."
+        "desc": "Eres un joven chileno (25-30 años) que quiere comprar su primera vivienda pero tiene pocos ahorros. Tu principal preocupación es el 'Pie' y si puedes usar subsidios (DS1, DS19, FOGAES). No entiendes mucho de términos financieros complejos. Usas un lenguaje cercano, a veces coloquial ('depa', 'luca', 'bacán'), y sueles preguntar '¿qué necesito?' o '¿cómo lo hago?'."
     },
     {
         "name": "El Trabajador Independiente",
