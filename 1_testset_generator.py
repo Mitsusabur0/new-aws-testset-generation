@@ -25,42 +25,6 @@ OUTPUT_PRICE = 0.0006
 
 # --- CHILEAN BANKING CONTEXT CONFIGURATION ---
 
-# PERSONAS = [
-#     {
-#         "name": "El Primerizo Ahorrativo",
-#         "desc": "Eres un joven chileno (25-30 años) que quiere comprar su primera vivienda pero tiene pocos ahorros. Tu principal preocupación es el 'Pie' y si puedes usar subsidios (DS1, DS19, FOGAES). No entiendes mucho de términos financieros complejos. Usas un lenguaje cercano, a veces coloquial ('depa', 'luca', 'bacán'), y sueles preguntar '¿qué necesito?' o '¿cómo lo hago?'."
-#     },
-#     {
-#         "name": "El Trabajador Independiente",
-#         "desc": "Eres un profesional que trabaja emitiendo boletas de honorarios (no tienes contrato indefinido). Tu mayor ansiedad es saber si el banco te prestará dinero a pesar de no ser empleado dependiente. Preguntas sobre 'castigos' al sueldo, antigüedad laboral requerida, requisitos para independientes y cómo demostrar ingresos siendo freelance."
-#     },
-#     {
-#         "name": "El Planificador Familiar",
-#         "desc": "Estás buscando comprar en conjunto. Tu foco principal es el 'Complemento de Renta'. Necesitas saber con quién puedes sumar sueldo (pareja sin casarse, padres, hermanos, amigos), qué requisitos piden al codeudor y a nombre de quién queda la propiedad. Eres pragmático y buscas maximizar el monto del crédito sumando ingresos."
-#     },
-#     {
-#         "name": "El Inversionista Informado",
-#         "desc": "Ya tienes una propiedad y entiendes cómo funciona el sistema. Buscas una segunda vivienda para inversión o quieres mejorar tus condiciones actuales. Preguntas por 'Refinanciamiento', 'Portabilidad', 'Tasa de interés' actual, 'Mutuarias' vs Bancos, y rentabilidad. Tu tono es directo, serio y financiero. No necesitas explicaciones básicas."
-#     },
-#     {
-#         "name": "El Adulto Mayor Preocupado",
-#         "desc": "Eres una persona mayor (55+ años) o jubilado. Tu preocupación es la edad límite para solicitar un hipotecario. Preguntas hasta qué edad te prestan, si los seguros son más caros, y por plazos de pago más cortos. Eres muy educado, formal y usas frases como 'Estimados', 'Quisiera consultar', 'Agradecería orientación'."
-#     }
-# ]
-
-# Query styles in Spanish
-# QUERY_STYLES = [
-#     "Estilo 'Buscador (Keyword)': Frases cortas, telegráficas y sin conectores gramaticales. Como si el usuario estuviera escribiendo en la barra de Google. Ejemplo: 'requisitos pie', 'tasa interes hoy', 'simular dividendo'.",
-    
-#     "Estilo 'Narrativo con Cifras': El usuario plantea un escenario detallado incluyendo datos numéricos hipotéticos (sueldo líquido, monto ahorrado, valor de la propiedad) para validar si su caso específico califica. Ejemplo: 'Si gano 1.5 millones y tengo 10 millones de pie, ¿puedo comprar?'",
-    
-#     "Estilo 'Conversacional Informal': Redacción completa, natural y relajada. Incluye saludos ('Hola Vivi', 'Buenas'), tuteo, y modismos chilenos suaves ('al tiro', 'cachai', 'brígido'). Trata al asistente como a una persona.",
-    
-#     "Estilo 'Principiante Confundido': Preguntas abiertas, vagas o de solicitud de orientación general. El usuario admite explícitamente no saber por dónde empezar o no entender la terminología. Ejemplo: 'No entiendo nada, explícame cómo funciona lo del subsidio'.",
-    
-#     "Estilo 'Imperativo/Directo': El usuario va directo al grano, sin saludos ni rodeos. Busca un dato concreto, una confirmación de sí/no, o una acción inmediata. Ejemplo: 'Dime la tasa actual', '¿Se puede complementar renta con amigos? Sí o no'."
-# ]
-
 QUERY_STYLES = [
     {
         "style_name": "Buscador de Palabras Clave",
@@ -88,65 +52,6 @@ QUERY_STYLES = [
     }
 ]
 
-FEW_SHOT_EXAMPLES = """
-EJEMPLOS DE ENTRENAMIENTO (FEW-SHOT):
-
----
-Ejemplo 1:
-[Contexto]: "Para trabajadores independientes, se requiere un mínimo de 1 año de antigüedad en el giro y las últimas 6 boletas de honorarios continuas. El castigo al ingreso es del 30%."
-[Estilo]: Narrativo con Cifras
-[Generación]: "Hola, mira yo boleteo hace 2 años y gano 1.2 millones bruto. Si me castigan el 30%, ¿cuánto sueldo me consideran para el banco? ¿Me sirve?"
-
----
-Ejemplo 2:
-[Contexto]: "El Subsidio DS19 es un beneficio automático que se aplica directamente al valor de la propiedad. No requiere postulación previa en el MINVU, solo cumplir los requisitos del crédito."
-[Estilo]: Conversacional Informal
-[Generación]: "Oye Vivi, una consulta. Eso del subsidio ds19 qué es? Porque no cacho mucho."
-
----
-Ejemplo 3:
-[Contexto]: "La Tasa Mixta ofrece un interés fijo por los primeros 5 años y luego variable por el resto del periodo. Tasa actual referencial: 4,5% anual."
-[Estilo]: Imperativo/Directo
-[Generación]: "Dime la tasa fija actual para un crédito a 20 años. ¿Tienen opciones mixtas?"
-
----
-Ejemplo 4:
-[Contexto]: "Podrán complementar renta los cónyuges, parejas con unión civil o parejas de hecho con hijos en común. También se permite padres con hijos."
-[Estilo]: Narrativo con Cifras
-[Generación]: "Somos una pareja, no estamos casados ni tenemos hijos, pero entre los dos sumamos 2 millones de pesos. ¿Podemos complementar renta para comprar la casa o nos van a rechazar?"
-
----
-Ejemplo 5:
-[Contexto]: "Requisitos: Ser chileno o extranjero con residencia definitiva. Tener buenos antecedentes comerciales (Sin DICOM)."
-[Estilo]: Conversacional Informal
-[Generación]: "Pucha, si estuve en Dicom el año pasado pero ya pagué todo y estoy limpio, ¿me dan el crédito igual o sigo castigado?"
-
----
-Ejemplo 6:
-[Contexto]: "Financiamiento máximo del 90% para primera vivienda. El cliente debe contar con el 10% de pie al momento de la escritura."
-[Estilo]: Buscador (Keyword)
-[Generación]: "credito hipotecario sin pie 10%"
-
----
-Ejemplo 7:
-[Contexto]: "Seguro de Desgravamen: Cubre el saldo insoluto de la deuda en caso de fallecimiento del titular. La prima aumenta con la edad del asegurado. Edad máxima de ingreso: 70 años."
-[Estilo]: Conversacional Informal (Formal)
-[Generación]: "Estimados, muy buenas tardes. Tengo 68 años y quisiera saber si todavía estoy a tiempo de pedir un préstamo o si el seguro me va a salir muy caro por la edad."
-
----
-Ejemplo 8:
-[Contexto]: "Glosario de Términos. UF: Unidad de Fomento. CAE: Carga Anual Equivalente. CTC: Costo Total del Crédito."
-[Estilo]: Conversacional Informal
-[Generación]: "No entiendo nada de las siglas. ¿Qué es eso del CAE que sale en la simulación? ¿Es lo que pago al final?"
-
----
-Ejemplo 9:
-[Contexto]: "Simulación para propiedad de 2.500 UF. Pie del 20% (500 UF). Monto del crédito: 2.000 UF. Dividendo estimado a 30 años: UF 9,5."
-[Estilo]: Narrativo con Cifras
-[Generación]: "Si la casa cuesta 2500 UF y yo solo tengo para el 10% del pie, ¿en cuánto me quedaría la cuota mensual más o menos?"
-
-"""
-
 
 
 def get_bedrock_client():
@@ -159,56 +64,56 @@ def clean_llm_output(text):
     cleaned_text = re.sub(r'<reasoning>.*?</reasoning>', '', text, flags=re.DOTALL)
     return cleaned_text.strip()
 
-def generate_question_only(chunk_text, style, client):
-    """
-    Sends Context + Style to LLM.
-    MUST create a realistic user question based on the context.
-    The following is just a placeholder
-    """
+def generate_question_only(chunk_text, query_styles, client):    
     
-    
+    system_prompt = f"""
+### ROL DEL SISTEMA
+Eres un Generador de Datos Sintéticos especializado en Banca y Bienes Raíces de Chile.
+Tu trabajo es crear el "Test Set" para evaluar un asistente de IA (RAG) del Banco Estado (Casaverso).
+
+### TAREA PRINCIPAL
+Se te entregará un fragmento de texto (La "Respuesta").
+Tu objetivo es redactar la **Consulta del Usuario** (El "Input") que provocaría que el sistema recupere este texto como respuesta.
+
+### REGLAS DE ORO (CRÍTICO: LEER CON ATENCIÓN)
+1. **ASIMETRÍA DE INFORMACIÓN:** El usuario NO ha leído el texto. No sabe los términos técnicos exactos, ni los porcentajes, ni los artículos de la ley que aparecen en el texto.
+2. **INTENCIÓN vs CONTENIDO:**
+- MAL (Contaminado): "¿Cuáles son los requisitos del artículo 5 del subsidio DS19?" (El usuario no sabe que existe el artículo 5).
+- BIEN (Realista): "Oye, ¿qué papeles me piden para postular al subsidio?"
+3. **ABSTRACCIÓN:** Si el texto habla de "Tasa fija del 4.5%", el usuario NO pregunta "¿Es la tasa del 4.5%?". El usuario pregunta "¿Cómo están las tasas hoy?".
+4. **SI EL TEXTO ES CORTO/PARCIAL:** Si el fragmento es muy específico o técnico, el usuario debe hacer una pregunta más amplia o vaga que este fragmento respondería parcialmente.
+5. **CONTEXTO CHILENO:** Usa vocabulario local, modismos y el tono correspondiente al estilo solicitado.
+
+
+### DOCUMENTO DE REFERENCIA:
+Se te etregará un fragmento de texto que el asistente debería recuperar como respuesta a la consulta del usuario.
+
+### ESTILOS DE CONSULTA DISPONIBLES:
+Se te entregará una lista de 3 estilos. Debes seleccionar el estilo que permita más fácilmente crear una consulta realista en rol de usuario al documento específico entregado. 
+Luego, debes redactar la consulta adoptando el estilo seleccionado.
+
+### FORMATO DE SALIDA
+Tu respuesta serán dos tags xml: <style_name> y <user_input>.
+El texto dentro de style_name es el nombre del estilo seleccionado. Debes mantener el MISMO style_name entregado.
+El texto dentro del <user_input> debe ser la consulta generada, sin comillas, sin saltos de línea, sin explicaciones adicionales. Es el texto plano de la consulta del usuario.
+Responde ÚNICAMENTE con este formato XML (sin markdown, sin explicaciones):
+
+<style_name>NOMBRE_DEL_ESTILO</style_name>
+<user_input>TU_CONSULTA_GENERADA_AQUI</user_input>
+"""
+
     prompt = f"""
-    ### ROL Y OBJETIVO
-    Actúa como un simulador de usuarios chilenos reales de un asistente IA de un sitio web inmobiliario bancario.
-    Estamos haciendo un testset para evaluar el retrieval del sistema RAG del asistente IA.
-    Tu tarea es generar una Pregunta de Usuario basado ESTRICTAMENTE en el "Texto de Referencia" proporcionado abajo.
-
-
-    ### INPUTS DE SIMULACIÓN
-    **Estilo de Consulta:** {style}
-
-    ### GUÍA DE EJEMPLOS (FEW-SHOT)
-    Usa los siguientes ejemplos SOLAMENTE como guía de tono, vocabulario y estructura.
-    ADVERTENCIA: NO uses la información/contenido de estos ejemplos. Usa SOLO LA INFORMACIÓN DEL TEXTO DE REFERENCIA para generar la respuesta.
-
-    {FEW_SHOT_EXAMPLES}
-
-    ---
-
-    ### INSTRUCCIONES DE GENERACIÓN
-    1. **Análisis de Contenido:** Lee el "Texto de Referencia" actual. 
-    2. **Formulación de la Pregunta:**
-    - La pregunta debe ser respondible **ÚNICAMENTE** con el texto provisto.
-    - Usa modismos chilenos si el perfil lo dicta (UF, pie, depa, lucas, carnet).
-    - Aplica el "Estilo de Consulta" (si es "Buscador", sé breve; si es "Narrativo", inventa una situación con cifras).
-
-    ### FORMATO DE SALIDA (OBLIGATORIO)
-    Debes responder ÚNICAMENTE con la Pregunta de Usuario generada, sin explicaciones ni comentarios adicionales. 
-    Tu output es SÓLO el input real que el usuario le daría al asistente virtual, NADA MÁS.
-    Las preguntas NO DEBEN ser muy extensas. Los ususarios reales tienden a ser concisos y no muy detallados. 
-
-    ---
-
-    ### TEXTO DE REFERENCIA (CONTEXTO REAL que responde la pregunta):
-    {chunk_text}
-    """
-
+### DOCUMENTO DE REFERENCIA:
+{chunk_text}    
+### ESTILOS DE CONSULTA DISPONIBLES:
+{query_styles}
+"""
 
     # Payload structure
     body = json.dumps({
-        "messages": [{"role": "user", "content": prompt}],
+        "messages": [{"role": "system", "content": system_prompt}, {"role": "user", "content": prompt}],
         "temperature": TEMPERATURE,
-        "max_tokens": 1000 
+        "max_tokens": 2000 
     })
 
     try:
@@ -228,7 +133,6 @@ def generate_question_only(chunk_text, style, client):
             content = str(response_body)
 
 
-
         # --- CLEAN THE OUTPUT ---
         # 1. Remove reasoning tags
         content_no_reasoning = clean_llm_output(content)
@@ -243,7 +147,6 @@ def generate_question_only(chunk_text, style, client):
     except Exception as e:
         print(f"General Error: {e}")
         return None
-
 
 
 def main():
@@ -278,20 +181,21 @@ def main():
                     continue
                 
                 # --- PROGRAMMATIC SELECTION ---
-                # selected_persona = random.choice(PERSONAS)
-                selected_style = random.choice(QUERY_STYLES)
+                #  We must change this so that it selects 3 random styles and passes them to the LLM
+                # THIS IS WHERE WE MUST PUT THE LOGIC TO SELECT 3 STYLES RANDOMLY
+                # selected_styles = ???
                 
-                print(f"[{i+1}/{len(files)}] Processing {os.path.basename(file_path)} | Style: {selected_style['style_name']}")
+                print(f"[{i+1}/{len(files)}] Processing {os.path.basename(file_path)}")
                 
                 # --- CALL LLM FOR USER INPUT ONLY ---
-                generated_question = generate_question_only(chunk_text, selected_style, client)
+                generated_question = generate_question_only(chunk_text, selected_styles, client)
                 
                 if generated_question:
                     # --- CONSTRUCT ROW PROGRAMMATICALLY ---
                     row = {
                         "user_input": generated_question,
                         "reference_contexts": [chunk_text], 
-                        "query_style": selected_style["style_name"]
+                        "query_style": selected_styles[0]["style_name"]
                     }
                     dataset.append(row)
                     
