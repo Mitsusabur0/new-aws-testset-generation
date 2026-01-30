@@ -2,11 +2,7 @@
 import pandas as pd
 import numpy as np
 import ast
-
-# --- CONFIGURATION ---
-INPUT_FILE = "outputs/1/evaluation_set.csv"
-OUTPUT_FILE = "outputs/1/testset_results.parquet"
-K = 3
+import config
 
 def calculate_metrics(row):
     # Load lists (handling string conversion from CSV)
@@ -40,7 +36,7 @@ def calculate_metrics(row):
     mrr = 1.0 / rank if hit else 0.0
     
     # Precision@K: (Relevant Items in Top K) / K
-    precision = (1 / K) if hit else 0
+    precision = (1 / config.EVAL_K) if hit else 0
     
     # Recall@K: (Relevant Items in Top K) / Total Relevant Items
     # Total Relevant is 1 in this synthetic setup
@@ -49,9 +45,9 @@ def calculate_metrics(row):
     return pd.Series([hit_rate, mrr, precision, recall])
 
 def main():
-    print(f"Loading {INPUT_FILE}...")
+    print(f"Loading {config.OUTPUT_EVALSET_CSV}...")
     try:
-        df = pd.read_csv(INPUT_FILE)
+        df = pd.read_csv(config.OUTPUT_EVALSET_CSV)
     except FileNotFoundError:
         print("Input file not found. Run File 2 first.")
         return
@@ -72,8 +68,8 @@ def main():
         lambda x: ast.literal_eval(x) if isinstance(x, str) else x
     )
 
-    final_df.to_parquet(OUTPUT_FILE, index=False)
-    print(f"Evaluation complete. Results saved to {OUTPUT_FILE}")
+    final_df.to_parquet(config.OUTPUT_RESULTS_PARQUET, index=False)
+    print(f"Evaluation complete. Results saved to {config.OUTPUT_RESULTS_PARQUET}")
 
 if __name__ == "__main__":
     main()

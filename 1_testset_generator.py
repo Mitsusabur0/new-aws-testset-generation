@@ -2,26 +2,14 @@ import os
 import json
 import random
 import glob
-import re  
+import re
+import time
+from datetime import datetime
 import pandas as pd
 import boto3
 from botocore.exceptions import ClientError
 
-# --- CONFIGURATION ---
-# KB_FOLDER = "./testfolder"
-KB_FOLDER = "./gold_subset"
-OUTPUT_FILE = "outputs/1/testset.csv"
-
-# AWS Config
-AWS_PROFILE = "default"
-AWS_REGION = "us-east-2"
-
-# LLM Config
-MODEL_ID = "openai.gpt-oss-120b-1:0"
-TEMPERATURE = 0.7 
-# LLM PRICING PER 1K TOKENS
-INPUT_PRICE = 0.00015
-OUTPUT_PRICE = 0.0006
+import config
 
 # --- CHILEAN BANKING CONTEXT CONFIGURATION ---
 
@@ -59,8 +47,40 @@ QUERY_STYLES = [
 
 
 def get_bedrock_client():
-    session = boto3.Session(profile_name=AWS_PROFILE)
-    return session.client(service_name="bedrock-runtime", region_name=AWS_REGION)
+    session = boto3.Session(profile_name=config.AWS_PROFILE_LLM)
+    return session.client(service_name="bedrock-runtime", region_name=config.AWS_REGION)
+
+def ensure_parent_dir(path):
+    parent = os.path.dirname(path)
+    if parent:
+        os.makedirs(parent, exist_ok=True)
+
+def backoff_sleep(attempt):
+    base = config.BACKOFF_BASE_SECONDS * (2 ** attempt)
+    sleep_for = min(base, config.BACKOFF_MAX_SECONDS)
+    sleep_for += random.uniform(0, config.BACKOFF_JITTER_SECONDS)
+    time.sleep(sleep_for)
+
+def call_with_retry(fn, operation_name, error_log):
+    last_error = None
+    for attempt in range(config.MAX_RETRIES + 1):
+        try:
+            return fn()
+        except ClientError as e:
+            last_error = e
+        except Exception as e:
+            last_error = e
+
+        if attempt < config.MAX_RETRIES:
+            backoff_sleep(attempt)
+        else:
+            if last_error is not None:
+                error_log.append({
+                    "timestamp": datetime.utcnow().isoformat() + "Z",
+                    "operation": operation_name,
+                    "error": str(last_error),
+                })
+            return None
 
 def clean_llm_output(text):
     """Removes <reasoning> tags and their content from the LLM output."""
@@ -68,7 +88,70 @@ def clean_llm_output(text):
     cleaned_text = re.sub(r'<reasoning>.*?</reasoning>', '', text, flags=re.DOTALL)
     return cleaned_text.strip()
 
-def generate_question_only(chunk_text, query_styles, client):    
+def parse_llm_xml(content, allowed_styles):
+    content_no_reasoning = clean_llm_output(content)
+
+    style_match = re.search(r'<style_name>(.*?)</style_name>', content_no_reasoning, re.DOTALL | re.IGNORECASE)
+    input_match = re.search(r'<user_input>(.*?)</user_input>', content_no_reasoning, re.DOTALL | re.IGNORECASE)
+
+    if not (style_match and input_match):
+        return None, None, content_no_reasoning
+
+    style_found = style_match.group(1).strip()
+    question_text = input_match.group(1).strip()
+    question_text = question_text.replace('"', '').replace('\n', ' ').strip()
+
+    if not question_text:
+        return None, None, content_no_reasoning
+
+    if allowed_styles and style_found not in allowed_styles:
+        return None, None, content_no_reasoning
+
+    return question_text, style_found, content_no_reasoning
+
+def repair_xml_response(raw_content, allowed_styles, client, error_log):
+    allowed_str = ", ".join(allowed_styles) if allowed_styles else ""
+    repair_prompt = f"""
+Extrae la consulta del usuario y el estilo desde el siguiente texto y devuelve SOLO el formato XML requerido.
+
+Texto original:
+{raw_content}
+
+Estilos permitidos: {allowed_str}
+
+Formato requerido (sin markdown, sin texto adicional):
+<style_name>NOMBRE_DEL_ESTILO</style_name>
+<user_input>CONSULTA_DEL_USUARIO</user_input>
+"""
+
+    body = json.dumps({
+        "messages": [{"role": "user", "content": repair_prompt}],
+        "temperature": 0.0,
+        "max_tokens": 500,
+    })
+
+    def _call():
+        return client.invoke_model(
+            modelId=config.MODEL_ID,
+            body=body
+        )
+
+    response = call_with_retry(_call, "invoke_model_repair", error_log)
+    if response is None:
+        return None, None, None
+
+    response_body = json.loads(response.get('body').read().decode('utf-8'))
+    if 'choices' in response_body:
+        content = response_body['choices'][0]['message']['content']
+    elif 'output' in response_body:
+        content = response_body['output']['message']['content']
+    else:
+        content = str(response_body)
+
+    return parse_llm_xml(content, allowed_styles)
+
+def generate_question_only(chunk_text, query_styles, client, error_log, parse_fail_log_path):
+    allowed_styles = [style["style_name"] for style in query_styles]
     
     system_prompt = f"""
 ### ROL DEL SISTEMA
@@ -118,74 +201,77 @@ Responde ÚNICAMENTE con este formato XML (sin markdown, sin explicaciones):
     # Payload structure
     body = json.dumps({
         "messages": [{"role": "system", "content": system_prompt}, {"role": "user", "content": prompt}],
-        "temperature": TEMPERATURE,
+        "temperature": config.TEMPERATURE,
         "max_tokens": 2000 
     })
 
-    try:
-        response = client.invoke_model(
-            modelId=MODEL_ID,
+    def _call():
+        return client.invoke_model(
+            modelId=config.MODEL_ID,
             body=body
         )
-        response_body = json.loads(response.get('body').read().decode('utf-8'))
-        
-        # Parsing logic
-        # CHECK RESPONSE AND ADJUST ACCORDINGLY
-        if 'choices' in response_body:
-            content = response_body['choices'][0]['message']['content']
-        elif 'output' in response_body:
-            content = response_body['output']['message']['content']
-        else:
-            content = str(response_body)
 
-
-        # --- CLEAN THE OUTPUT ---
-        # 1. Remove reasoning tags
-        content_no_reasoning = clean_llm_output(content)
-        
-        # 2. Extract XML tags using Regex
-        # We need to extract the style selected and the input generated
-        style_match = re.search(r'<style_name>(.*?)</style_name>', content_no_reasoning, re.DOTALL)
-        input_match = re.search(r'<user_input>(.*?)</user_input>', content_no_reasoning, re.DOTALL)
-
-        if style_match and input_match:
-            style_found = style_match.group(1).strip()
-            question_text = input_match.group(1).strip()
-            # Clean up potential extra quotes or newlines in the question
-            question_text = question_text.replace('"', '').replace('\n', ' ').strip()
-            
-            return question_text, style_found
-        else:
-            print(f"Warning: Could not parse XML from LLM response: {content_no_reasoning[:100]}...")
-            return None, None
-
-    except ClientError as e:
-        print(f"AWS Error: {e}")
+    response = call_with_retry(_call, "invoke_model", error_log)
+    if response is None:
         return None, None
-    except Exception as e:
-        print(f"General Error: {e}")
-        return None, None
+
+    response_body = json.loads(response.get('body').read().decode('utf-8'))
+
+    if 'choices' in response_body:
+        content = response_body['choices'][0]['message']['content']
+    elif 'output' in response_body:
+        content = response_body['output']['message']['content']
+    else:
+        content = str(response_body)
+
+    question_text, style_found, cleaned = parse_llm_xml(content, allowed_styles)
+    if question_text and style_found:
+        return question_text, style_found
+
+    repair_q, repair_style, _ = repair_xml_response(content, allowed_styles, client, error_log)
+    if repair_q and repair_style:
+        return repair_q, repair_style
+
+    ensure_parent_dir(parse_fail_log_path)
+    with open(parse_fail_log_path, "a", encoding="utf-8") as log_file:
+        log_file.write(json.dumps({
+            "timestamp": datetime.utcnow().isoformat() + "Z",
+            "reason": "parse_failed",
+            "allowed_styles": allowed_styles,
+            "raw_response": cleaned,
+        }, ensure_ascii=False) + "\n")
+
+    print(f"Warning: Could not parse XML from LLM response: {cleaned[:100]}...")
+    return None, None
 
 
 def main():
-    print(f"Scanning for files in {KB_FOLDER}...")
+    random.seed(config.SEED)
+    print(f"Using seed: {config.SEED}")
+    print(f"Scanning for files in {config.KB_FOLDER}...")
     
-    if not os.path.exists(KB_FOLDER):
-        print(f"Error: Directory {KB_FOLDER} does not exist.")
+    if not os.path.exists(config.KB_FOLDER):
+        print(f"Error: Directory {config.KB_FOLDER} does not exist.")
         return
 
     # Recursive glob search for .md files
-    search_pattern = os.path.join(KB_FOLDER, "**", "*.md")
+    search_pattern = os.path.join(config.KB_FOLDER, "**", "*.md")
     files = glob.glob(search_pattern, recursive=True)
     
     if not files:
-        print(f"No .md files found in {KB_FOLDER} or its subdirectories.")
+        print(f"No .md files found in {config.KB_FOLDER} or its subdirectories.")
         return
 
     print(f"Found {len(files)} Markdown files.")
 
     client = get_bedrock_client()
     dataset = []
+    error_log = []
+    parse_failures = 0
+    parse_fail_log_path = os.path.join(
+        os.path.dirname(config.OUTPUT_TESTSET_CSV),
+        "parse_failures.jsonl"
+    )
 
     print("Generating synthetic questions...")
 
@@ -206,26 +292,50 @@ def main():
                 
                 # --- CALL LLM FOR USER INPUT ONLY ---
                 # Now expects a tuple return (question, style_used)
-                generated_question, style_used = generate_question_only(chunk_text, selected_styles, client)
+                generated_question, style_used = generate_question_only(
+                    chunk_text,
+                    selected_styles,
+                    client,
+                    error_log,
+                    parse_fail_log_path
+                )
                 
                 if generated_question and style_used:
                     # --- CONSTRUCT ROW PROGRAMMATICALLY ---
                     row = {
                         "user_input": generated_question,
                         "reference_contexts": [chunk_text], 
-                        "query_style": style_used
+                        "query_style": style_used,
+                        "seed": config.SEED
                     }
                     dataset.append(row)
+                else:
+                    parse_failures += 1
                     
         except Exception as e:
             print(f"Error reading file {file_path}: {e}")
 
     if dataset:
         df = pd.DataFrame(dataset)
-        df.to_csv(OUTPUT_FILE, index=False)
-        print(f"Successfully generated {len(df)} test cases. Saved to {OUTPUT_FILE}")
+        ensure_parent_dir(config.OUTPUT_TESTSET_CSV)
+        df.to_csv(config.OUTPUT_TESTSET_CSV, index=False)
+        print(f"Successfully generated {len(df)} test cases. Saved to {config.OUTPUT_TESTSET_CSV}")
     else:
         print("No data generated.")
+
+    if error_log or parse_failures:
+        print(f"Non-fatal errors: {len(error_log)} | Parse failures: {parse_failures}")
+        summary_path = os.path.join(
+            os.path.dirname(config.OUTPUT_TESTSET_CSV),
+            "run_summary.json"
+        )
+        ensure_parent_dir(summary_path)
+        with open(summary_path, "w", encoding="utf-8") as summary_file:
+            json.dump({
+                "generated": len(dataset),
+                "parse_failures": parse_failures,
+                "errors": error_log,
+            }, summary_file, ensure_ascii=False, indent=2)
 
 if __name__ == "__main__":
     main()

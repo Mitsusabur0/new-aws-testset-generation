@@ -1,9 +1,7 @@
 # app.py
 import streamlit as st
 import pandas as pd
-
-# --- CONFIGURATION ---
-INPUT_FILE = "outputs/1/testset_results.parquet"
+import config
 
 st.set_page_config(page_title="RAG Offline Eval", layout="wide")
 
@@ -11,7 +9,7 @@ st.set_page_config(page_title="RAG Offline Eval", layout="wide")
 @st.cache_data
 def load_data():
     try:
-        df = pd.read_parquet(INPUT_FILE)
+        df = pd.read_parquet(config.OUTPUT_RESULTS_PARQUET)
         # Ensure list columns are actual Python lists, not numpy arrays
         list_cols = ['reference_contexts', 'retrieved_contexts']
         for col in list_cols:
