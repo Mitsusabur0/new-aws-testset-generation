@@ -4,8 +4,8 @@ import numpy as np
 import ast
 
 # --- CONFIGURATION ---
-INPUT_FILE = "evaluation_set.csv"
-OUTPUT_FILE = "testset_results.parquet"
+INPUT_FILE = "outputs/1/evaluation_set.csv"
+OUTPUT_FILE = "outputs/1/testset_results.parquet"
 K = 3
 
 def calculate_metrics(row):

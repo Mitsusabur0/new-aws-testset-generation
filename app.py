@@ -3,7 +3,7 @@ import streamlit as st
 import pandas as pd
 
 # --- CONFIGURATION ---
-INPUT_FILE = "testset_results.parquet"
+INPUT_FILE = "outputs/1/testset_results.parquet"
 
 st.set_page_config(page_title="RAG Offline Eval", layout="wide")
 
@@ -32,12 +32,6 @@ def main():
     # --- SIDEBAR FILTERS ---
     st.sidebar.header("Filters")
     
-    personas = st.sidebar.multiselect(
-        "Select Persona", 
-        options=df['persona_name'].unique(),
-        default=df['persona_name'].unique()
-    )
-    
     styles = st.sidebar.multiselect(
         "Select Query Style", 
         options=df['query_style'].unique(),
@@ -46,7 +40,6 @@ def main():
 
     # Apply filters
     filtered_df = df[
-        (df['persona_name'].isin(personas)) & 
         (df['query_style'].isin(styles))
     ]
 
@@ -65,25 +58,16 @@ def main():
 
         st.divider()
         
-        col_chart1, col_chart2 = st.columns(2)
-        
-        with col_chart1:
-            st.subheader("Hit Rate by Persona")
-            persona_metrics = filtered_df.groupby('persona_name')['hit_rate'].mean()
-            st.bar_chart(persona_metrics)
-            
-        with col_chart2:
-            st.subheader("Hit Rate by Query Style")
-            style_metrics = filtered_df.groupby('query_style')['hit_rate'].mean()
-            st.bar_chart(style_metrics)
+        st.subheader("Hit Rate by Query Style")
+        style_metrics = filtered_df.groupby('query_style')['hit_rate'].mean()
+        st.bar_chart(style_metrics)
 
     # --- TAB 2: DETAILED ANALYSIS ---
     with tab2:
         st.subheader("Test Case Explorer")
         
         # Master View: Table with selection
-        # We create a display dataframe with subset of columns
-        display_cols = ['user_input', 'mrr', 'hit_rate', 'persona_name', 'query_style']
+        display_cols = ['user_input', 'mrr', 'hit_rate', 'query_style']
         
         # Using Streamlit's dataframe selection (requires newer Streamlit, fallback logic included)
         selection = st.dataframe(
@@ -108,12 +92,11 @@ def main():
             
             st.markdown(f"### Question: *{row['user_input']}*")
             
-            # Metrics Row for this case
-            d_col1, d_col2, d_col3, d_col4 = st.columns(4)
+            # Metrics Row for this case (Reduced to 3 columns)
+            d_col1, d_col2, d_col3 = st.columns(3)
             d_col1.info(f"MRR: {row['mrr']}")
             d_col2.info(f"Hit: {'✅' if row['hit_rate'] == 1 else '❌'}")
-            d_col3.info(f"Persona: {row['persona_name']}")
-            d_col4.info(f"Style: {row['query_style']}")
+            d_col3.info(f"Style: {row['query_style']}")
             
             comp_col1, comp_col2 = st.columns(2)
             

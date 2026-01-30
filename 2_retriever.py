@@ -5,15 +5,15 @@ import ast
 from botocore.exceptions import ClientError
 
 # --- CONFIGURATION ---
-INPUT_FILE = "testset.csv"
-OUTPUT_FILE = "evaluation_set.csv"
+INPUT_FILE = "outputs/1/testset.csv"
+OUTPUT_FILE = "outputs/1/evaluation_set.csv"
 
 # AWS Config
 AWS_PROFILE = "sandbox"
 AWS_REGION = "us-east-1"
 SERVICE = "bedrock-agent-runtime"
 KB_ID = "J7JNHSZPJ3"
-TOP_K = 3
+TOP_K = 2
 
 def get_runtime_client():
     session = boto3.Session(profile_name=AWS_PROFILE)

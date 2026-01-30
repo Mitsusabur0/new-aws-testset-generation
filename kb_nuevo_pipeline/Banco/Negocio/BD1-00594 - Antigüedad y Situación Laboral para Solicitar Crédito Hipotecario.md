@@ -1,3 +1,0 @@
-# Antigüedad y Situación Laboral para Solicitar Crédito Hipotecario
-
-La antigüedad laboral mínima requerida se encuentra en función de la actividad o tipo de ingreso del cliente. (diferencias en sitio público)

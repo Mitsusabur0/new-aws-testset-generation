@@ -9,8 +9,8 @@ from botocore.exceptions import ClientError
 
 # --- CONFIGURATION ---
 # KB_FOLDER = "./testfolder"
-KB_FOLDER = "./kb_nuevo_pipeline"
-OUTPUT_FILE = "testset.csv"
+KB_FOLDER = "./gold_subset"
+OUTPUT_FILE = "outputs/1/testset.csv"
 
 # AWS Config
 AWS_PROFILE = "default"
@@ -49,7 +49,11 @@ QUERY_STYLES = [
     {
         "style_name": "Orientado a la Acción",
         "description": "El usuario quiere saber el 'cómo' operativo. Pregunta por pasos a seguir, documentos a llevar, lugares dónde ir o botones que apretar. Ejemplo: '¿Dónde mando los papeles?', '¿Cómo activo esto?', '¿Con quién hablo?'."
-    }
+    },
+    {
+        "style_name": "Mal redactado / Errores ortográficos",
+        "description": "El usuario escribe de forma informal, con errores ortográficos o mal redactado. Puede usar abreviaturas, faltas de puntuación o estructura incoherente. Ejemplo: 'kiero saver los reqs pa el subsidio' "
+    },
 ]
 
 
@@ -89,7 +93,9 @@ Tu objetivo es redactar la **Consulta del Usuario** (El "Input") que provocaría
 Se te etregará un fragmento de texto que el asistente debería recuperar como respuesta a la consulta del usuario.
 
 ### ESTILOS DE CONSULTA DISPONIBLES:
-Se te entregará una lista de 3 estilos. Debes seleccionar el estilo que permita más fácilmente crear una consulta realista en rol de usuario al documento específico entregado. 
+Se te entregará una lista de 2 estilos. 
+Debes seleccionar uno de los estilos para redactar la pregunta. 
+Si ambos estilos sirven para el fragmento, selecciona al azar, no siempre el más simple. Si sólo uno sirve, úsalo. Si ninguno sirve, elige el que mejor se adapte con modificaciones.
 Luego, debes redactar la consulta adoptando el estilo seleccionado.
 
 ### FORMATO DE SALIDA
@@ -136,17 +142,29 @@ Responde ÚNICAMENTE con este formato XML (sin markdown, sin explicaciones):
         # --- CLEAN THE OUTPUT ---
         # 1. Remove reasoning tags
         content_no_reasoning = clean_llm_output(content)
-        # 2. Remove any remaining quotes or newlines
-        question_text = content_no_reasoning.replace('"', '').replace('\n', ' ').strip()
         
-        return question_text
+        # 2. Extract XML tags using Regex
+        # We need to extract the style selected and the input generated
+        style_match = re.search(r'<style_name>(.*?)</style_name>', content_no_reasoning, re.DOTALL)
+        input_match = re.search(r'<user_input>(.*?)</user_input>', content_no_reasoning, re.DOTALL)
+
+        if style_match and input_match:
+            style_found = style_match.group(1).strip()
+            question_text = input_match.group(1).strip()
+            # Clean up potential extra quotes or newlines in the question
+            question_text = question_text.replace('"', '').replace('\n', ' ').strip()
+            
+            return question_text, style_found
+        else:
+            print(f"Warning: Could not parse XML from LLM response: {content_no_reasoning[:100]}...")
+            return None, None
 
     except ClientError as e:
         print(f"AWS Error: {e}")
-        return None
+        return None, None
     except Exception as e:
         print(f"General Error: {e}")
-        return None
+        return None, None
 
 
 def main():
@@ -181,21 +199,21 @@ def main():
                     continue
                 
                 # --- PROGRAMMATIC SELECTION ---
-                #  We must change this so that it selects 3 random styles and passes them to the LLM
-                # THIS IS WHERE WE MUST PUT THE LOGIC TO SELECT 3 STYLES RANDOMLY
-                # selected_styles = ???
+                # Select 3 random styles from the global list
+                selected_styles = random.sample(QUERY_STYLES, 2)
                 
                 print(f"[{i+1}/{len(files)}] Processing {os.path.basename(file_path)}")
                 
                 # --- CALL LLM FOR USER INPUT ONLY ---
-                generated_question = generate_question_only(chunk_text, selected_styles, client)
+                # Now expects a tuple return (question, style_used)
+                generated_question, style_used = generate_question_only(chunk_text, selected_styles, client)
                 
-                if generated_question:
+                if generated_question and style_used:
                     # --- CONSTRUCT ROW PROGRAMMATICALLY ---
                     row = {
                         "user_input": generated_question,
                         "reference_contexts": [chunk_text], 
-                        "query_style": selected_styles[0]["style_name"]
+                        "query_style": style_used
                     }
                     dataset.append(row)
                     
