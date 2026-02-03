@@ -65,7 +65,7 @@ def main():
         st.subheader("Test Case Explorer")
         
         # Master View: Table with selection
-        display_cols = ['user_input', 'mrr', 'hit_rate', 'query_style']
+        display_cols = ['source_file', 'user_input', 'mrr', 'query_style']
         
         # Using Streamlit's dataframe selection (requires newer Streamlit, fallback logic included)
         selection = st.dataframe(

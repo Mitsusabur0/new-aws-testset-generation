@@ -5,7 +5,7 @@ KB_FOLDER = os.getenv("KB_FOLDER", "./single_file_testfolder")
 # KB_FOLDER = os.getenv("KB_FOLDER", "./gold_full")
 OUTPUT_TESTSET_CSV = os.getenv("OUTPUT_TESTSET_CSV", "outputs/test/testset.csv")
 OUTPUT_EVALSET_CSV = os.getenv("OUTPUT_EVALSET_CSV", "outputs/test/evaluation_set.csv")
-OUTPUT_RESULTS_PARQUET = os.getenv("OUTPUT_RESULTS_PARQUET", "outputs/test/testset_results.parquet")
+OUTPUT_RESULTS_PARQUET = os.getenv("OUTPUT_RESULTS_PARQUET", "outputs/full/testset_results.parquet")
 
 # --- AWS CONFIG ---
 AWS_REGION = os.getenv("AWS_REGION", "us-east-1")
