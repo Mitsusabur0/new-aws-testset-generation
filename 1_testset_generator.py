@@ -44,6 +44,11 @@ QUERY_STYLES = [
     },
 ]
 
+def extract_bd_code(filename):
+    if not filename:
+        return ""
+    return filename[:9]
+
 
 
 def get_bedrock_client():
@@ -306,7 +311,7 @@ def main():
                         "user_input": generated_question,
                         "reference_contexts": [chunk_text], 
                         "query_style": style_used,
-                        "seed": config.SEED
+                        "source_file": extract_bd_code(os.path.basename(file_path))
                     }
                     dataset.append(row)
                 else:

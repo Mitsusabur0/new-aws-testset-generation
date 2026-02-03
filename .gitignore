@@ -2,7 +2,8 @@
 
 gold_full_actuales/
 gold_subset/
-
+gold/
+gold_full/
 
 
 # Github's default gitignore for Python

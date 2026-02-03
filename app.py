@@ -11,7 +11,7 @@ def load_data():
     try:
         df = pd.read_parquet(config.OUTPUT_RESULTS_PARQUET)
         # Ensure list columns are actual Python lists, not numpy arrays
-        list_cols = ['reference_contexts', 'retrieved_contexts']
+        list_cols = ['reference_contexts', 'retrieved_contexts', 'retrieved_file']
         for col in list_cols:
             if col in df.columns:
                 df[col] = df[col].apply(lambda x: x.tolist() if hasattr(x, 'tolist') else x)
@@ -110,19 +110,23 @@ def main():
             with comp_col2:
                 st.write("#### Retrieved Contexts (Top 3)")
                 retrieved = row['retrieved_contexts']
+                retrieved_files = row.get('retrieved_file', [])
                 
                 # Check formatting
                 if isinstance(retrieved, list):
                     for i, txt in enumerate(retrieved):
-                        # Simple visual check for match
-                        gt_txt_clean = " ".join(gt_list[0].lower().split()) if isinstance(gt_list, list) and gt_list else ""
-                        is_match = gt_txt_clean in " ".join(txt.lower().split())
+                        # File-name based match
+                        source_file = str(row.get('source_file', "")).strip()
+                        uri = ""
+                        if isinstance(retrieved_files, list) and i < len(retrieved_files):
+                            uri = str(retrieved_files[i])
+                        is_match = bool(source_file and uri and source_file in uri)
                         
                         color = "green" if is_match else "grey"
                         
                         with st.container(border=True):
                             if is_match:
-                                st.markdown(f"**✅ Rank {i+1}**")
+                                st.markdown(f"**Rank {i+1} ✅**")
                             else:
                                 st.markdown(f"**Rank {i+1}**")
                             st.text(txt)

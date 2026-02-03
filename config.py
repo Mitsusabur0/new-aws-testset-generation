@@ -1,11 +1,11 @@
 import os
 
 # --- PATHS ---
-# KB_FOLDER = os.getenv("KB_FOLDER", "./gold_subset")
-KB_FOLDER = os.getenv("KB_FOLDER", "./single_file_testfolder")
-OUTPUT_TESTSET_CSV = os.getenv("OUTPUT_TESTSET_CSV", "outputs/1/testset.csv")
-OUTPUT_EVALSET_CSV = os.getenv("OUTPUT_EVALSET_CSV", "outputs/1/evaluation_set.csv")
-OUTPUT_RESULTS_PARQUET = os.getenv("OUTPUT_RESULTS_PARQUET", "outputs/1/testset_results.parquet")
+# KB_FOLDER = os.getenv("KB_FOLDER", "./single_file_testfolder")
+KB_FOLDER = os.getenv("KB_FOLDER", "./gold_full")
+OUTPUT_TESTSET_CSV = os.getenv("OUTPUT_TESTSET_CSV", "outputs/full/testset.csv")
+OUTPUT_EVALSET_CSV = os.getenv("OUTPUT_EVALSET_CSV", "outputs/full/evaluation_set.csv")
+OUTPUT_RESULTS_PARQUET = os.getenv("OUTPUT_RESULTS_PARQUET", "outputs/full/testset_results.parquet")
 
 # --- AWS CONFIG ---
 AWS_REGION = os.getenv("AWS_REGION", "us-east-1")

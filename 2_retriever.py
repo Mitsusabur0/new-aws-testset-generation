@@ -6,6 +6,7 @@ import boto3
 import ast
 import random
 import time
+import re
 from datetime import datetime
 from botocore.exceptions import ClientError
 import config
@@ -53,6 +54,9 @@ def clean_text(text):
     # Remove excessive whitespace, newlines, etc.
     return " ".join(text.split())
 
+def extract_s3_uri(uri):
+    return uri or ""
+
 def retrieve_contexts(query, client, error_log):
     def _call():
         return client.retrieve(
@@ -73,8 +77,17 @@ def retrieve_contexts(query, client, error_log):
         return []
 
     results = response.get('retrievalResults', [])
-    retrieved_texts = [clean_text(res['content']['text']) for res in results]
-    return retrieved_texts
+    retrieved_texts = []
+    retrieved_files = []
+    for res in results:
+        retrieved_texts.append(clean_text(res['content']['text']))
+        uri = (
+            res.get('location', {})
+               .get('s3Location', {})
+               .get('uri', "")
+        )
+        retrieved_files.append(extract_s3_uri(uri))
+    return retrieved_texts, retrieved_files
 
 def main():
     print(f"Loading {config.OUTPUT_TESTSET_CSV}...")
@@ -94,15 +107,18 @@ def main():
     
     print("Starting retrieval process...")
     retrieved_data = []
+    retrieved_files_data = []
     
     for index, row in df.iterrows():
         query = row['user_input']
         print(f"[{index+1}/{len(df)}] Retrieving: {query[:30]}...")
         
-        contexts = retrieve_contexts(query, client, error_log)
+        contexts, retrieved_files = retrieve_contexts(query, client, error_log)
         retrieved_data.append(contexts)
+        retrieved_files_data.append(retrieved_files)
 
     df['retrieved_contexts'] = retrieved_data
+    df['retrieved_file'] = retrieved_files_data
     
     df.to_csv(config.OUTPUT_EVALSET_CSV, index=False)
     print(f"Retrieval complete. Saved to {config.OUTPUT_EVALSET_CSV}")
