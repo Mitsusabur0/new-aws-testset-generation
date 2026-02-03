@@ -1,16 +1,23 @@
 import os
 
 # --- PATHS ---
-# KB_FOLDER = os.getenv("KB_FOLDER", "./single_file_testfolder")
-KB_FOLDER = os.getenv("KB_FOLDER", "./gold_full")
-OUTPUT_TESTSET_CSV = os.getenv("OUTPUT_TESTSET_CSV", "outputs/full/testset.csv")
-OUTPUT_EVALSET_CSV = os.getenv("OUTPUT_EVALSET_CSV", "outputs/full/evaluation_set.csv")
-OUTPUT_RESULTS_PARQUET = os.getenv("OUTPUT_RESULTS_PARQUET", "outputs/full/testset_results.parquet")
+KB_FOLDER = os.getenv("KB_FOLDER", "./single_file_testfolder")
+# KB_FOLDER = os.getenv("KB_FOLDER", "./gold_full")
+OUTPUT_TESTSET_CSV = os.getenv("OUTPUT_TESTSET_CSV", "outputs/test/testset.csv")
+OUTPUT_EVALSET_CSV = os.getenv("OUTPUT_EVALSET_CSV", "outputs/test/evaluation_set.csv")
+OUTPUT_RESULTS_PARQUET = os.getenv("OUTPUT_RESULTS_PARQUET", "outputs/test/testset_results.parquet")
 
 # --- AWS CONFIG ---
 AWS_REGION = os.getenv("AWS_REGION", "us-east-1")
-AWS_PROFILE_LLM = os.getenv("AWS_PROFILE_LLM", "default")
-AWS_PROFILE_KB = os.getenv("AWS_PROFILE_KB", "sandbox")
+AWS_PROFILE_LLM = os.getenv("AWS_PROFILE_DEFAULT", "default")
+AWS_PROFILE_SANDBOX = os.getenv("AWS_PROFILE_SANDBOX", "sandbox")
+
+AWS_PROFILE_DESA_BEDROCK = os.getenv("AWS_PROFILE_DESA_BEDROCK", "943897082379_BECH_ReadOnlyBedrock")
+AWS_PROFILE_DESA_ACCESS = os.getenv("AWS_PROFILE_DESA_ACCESS", "943897082379_BECH_ReadOnlyAccess")
+
+AWS_PROFILE_TEST_BEDROCK = os.getenv("AWS_PROFILE_TEST_BEDROCK", "744139898209_BECH_ReadOnlyBedrock")
+AWS_PROFILE_TEST_ACCESS = os.getenv("AWS_PROFILE_TEST_ACCESS", "744139898209_BECH_ReadOnlyAccess")
+
 KB_SERVICE = os.getenv("KB_SERVICE", "bedrock-agent-runtime")
 KB_ID = os.getenv("KB_ID", "J7JNHSZPJ3")
 
