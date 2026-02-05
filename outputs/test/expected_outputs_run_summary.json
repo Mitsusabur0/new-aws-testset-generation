@@ -1,0 +1,20 @@
+{
+  "processed_rows": 3,
+  "errors": [
+    {
+      "timestamp": "2026-02-05T16:39:26.580093Z",
+      "operation": "invoke_model_expected_output",
+      "error": "An error occurred (ValidationException) when calling the InvokeModel operation: Malformed input request: #: subject must not be valid against schema {\"required\":[\"messages\"]}#: required key [anthropic_version] not found#/messages/0/role: system is not a valid enum value, please reformat your input and try again."
+    },
+    {
+      "timestamp": "2026-02-05T16:39:35.581533Z",
+      "operation": "invoke_model_expected_output",
+      "error": "An error occurred (ValidationException) when calling the InvokeModel operation: Malformed input request: #: subject must not be valid against schema {\"required\":[\"messages\"]}#: required key [anthropic_version] not found#/messages/0/role: system is not a valid enum value, please reformat your input and try again."
+    },
+    {
+      "timestamp": "2026-02-05T16:39:44.194406Z",
+      "operation": "invoke_model_expected_output",
+      "error": "An error occurred (ValidationException) when calling the InvokeModel operation: Malformed input request: #: subject must not be valid against schema {\"required\":[\"messages\"]}#: required key [anthropic_version] not found#/messages/0/role: system is not a valid enum value, please reformat your input and try again."
+    }
+  ]
+}
