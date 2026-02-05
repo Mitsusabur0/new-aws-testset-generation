@@ -12,7 +12,7 @@ from botocore.exceptions import ClientError
 import config
 
 def get_runtime_client():
-    session = boto3.Session(profile_name=config.AWS_PROFILE_KB)
+    session = boto3.Session(profile_name=config.AWS_PROFILE_SANDBOX)
     return session.client(service_name=config.KB_SERVICE, region_name=config.AWS_REGION)
 
 def ensure_parent_dir(path):
@@ -90,9 +90,9 @@ def retrieve_contexts(query, client, error_log):
     return retrieved_texts, retrieved_files
 
 def main():
-    print(f"Loading {config.OUTPUT_TESTSET_CSV}...")
+    print(f"Loading {config.RETRIEVER_INPUT_CSV}...")
     try:
-        df = pd.read_csv(config.OUTPUT_TESTSET_CSV)
+        df = pd.read_csv(config.RETRIEVER_INPUT_CSV)
     except FileNotFoundError:
         print("Input file not found. Run File 1 first.")
         return

@@ -4,6 +4,7 @@ import os
 KB_FOLDER = os.getenv("KB_FOLDER", "./single_file_testfolder")
 # KB_FOLDER = os.getenv("KB_FOLDER", "./gold_full")
 OUTPUT_TESTSET_CSV = os.getenv("OUTPUT_TESTSET_CSV", "outputs/test/testset.csv")
+RETRIEVER_INPUT_CSV = os.getenv("RETRIEVER_INPUT_CSV", "outputs/test/testset_with_actual_outputs.csv")
 OUTPUT_EVALSET_CSV = os.getenv("OUTPUT_EVALSET_CSV", "outputs/test/evaluation_set.csv")
 OUTPUT_RESULTS_PARQUET = os.getenv("OUTPUT_RESULTS_PARQUET", "outputs/full/testset_results.parquet")
 
