@@ -12,7 +12,7 @@ import config
 
 
 def get_runtime_client():
-    session = boto3.Session(profile_name=config.AWS_PROFILE_TEST_BEDROCK)
+    session = boto3.Session(profile_name=config.AWS_PROFILE_SANDBOX)
     return session.client(service_name=config.KB_SERVICE, region_name=config.AWS_REGION)
 
 
@@ -54,7 +54,7 @@ def call_with_retry(fn, operation_name, error_log):
 def retrieve_raw_response(query, client, error_log):
     def _call():
         return client.retrieve(
-            knowledgeBaseId="BEHIWZGEE6",
+            knowledgeBaseId=config.KB_ID,
             retrievalQuery={"text": query},
             retrievalConfiguration={
                 "vectorSearchConfiguration": {
