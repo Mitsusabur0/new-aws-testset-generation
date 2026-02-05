@@ -113,7 +113,7 @@ section.main > div {
 .hero {
     padding: 1.25rem 1.5rem;
     border-radius: 16px;
-    background: linear-gradient(120deg, #0f172a 0%, #1e293b 60%, #0b3b59 100%);
+    background: #0f172a;
     color: #ffffff;
     border: 1px solid rgba(255,255,255,0.1);
     box-shadow: 0 20px 60px rgba(15, 23, 42, 0.2);
@@ -135,6 +135,23 @@ section.main > div {
     background: rgba(255, 255, 255, 0.9);
     border: 1px solid rgba(148, 163, 184, 0.35);
     box-shadow: 0 10px 20px rgba(15, 23, 42, 0.06);
+    margin-bottom: 0.7rem;
+    max-width: 260px;
+}
+
+.kpi-card-custom {
+    background: linear-gradient(180deg, rgba(37, 99, 235, 0.10), rgba(37, 99, 235, 0.02));
+    border-color: rgba(37, 99, 235, 0.25);
+}
+
+.kpi-card-deepeval {
+    background: linear-gradient(180deg, rgba(15, 118, 110, 0.10), rgba(15, 118, 110, 0.02));
+    border-color: rgba(15, 118, 110, 0.25);
+}
+
+.kpi-card-ragas {
+    background: linear-gradient(180deg, rgba(249, 115, 22, 0.12), rgba(249, 115, 22, 0.02));
+    border-color: rgba(249, 115, 22, 0.25);
 }
 
 .kpi-label {
@@ -177,11 +194,80 @@ section.main > div {
     box-shadow: 0 14px 30px rgba(15, 23, 42, 0.05);
 }
 
+.section-title {
+    font-size: 0.85rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    font-weight: 600;
+    color: #475569;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-bottom: 0.4rem;
+}
+
+.section-title::before {
+    content: "";
+    width: 12px;
+    height: 12px;
+    border-radius: 999px;
+    background: currentColor;
+}
+
+.section-divider {
+    height: 1px;
+    margin: 0.75rem 0 1.1rem 0;
+    background: linear-gradient(90deg, currentColor, rgba(148, 163, 184, 0));
+    border: none;
+}
+
+.section-custom {
+    color: #1d4ed8;
+}
+
+.section-deepeval {
+    color: #0f766e;
+}
+
+.section-ragas {
+    color: #ea580c;
+}
+
+@media (prefers-color-scheme: dark) {
+    .section-divider {
+        background: linear-gradient(90deg, rgba(148, 163, 184, 0.5), rgba(148, 163, 184, 0));
+    }
+
+    .section-custom {
+        color: #93c5fd;
+    }
+
+    .section-deepeval {
+        color: #5eead4;
+    }
+
+    .section-ragas {
+        color: #fdba74;
+    }
+}
+
 @media (prefers-color-scheme: dark) {
     .kpi-card {
         background: rgba(30, 41, 59, 0.65);
         border: 1px solid rgba(148, 163, 184, 0.25);
         box-shadow: 0 12px 24px rgba(2, 6, 23, 0.35);
+    }
+
+    .kpi-card-custom {
+        border-color: rgba(59, 130, 246, 0.35);
+    }
+
+    .kpi-card-deepeval {
+        border-color: rgba(20, 184, 166, 0.35);
+    }
+
+    .kpi-card-ragas {
+        border-color: rgba(249, 115, 22, 0.35);
     }
 
     .kpi-label {
@@ -235,38 +321,43 @@ def render_kpis(df: pd.DataFrame) -> None:
         ("Entity Recall", df.get("ragas_context_entity_recall", pd.Series(dtype=float)).mean(), "float"),
     ]
 
-    def render_kpi_group(title: str, kpis: list[tuple[str, float, str]]) -> None:
-        st.markdown(f"#### {title}")
-        rows = [kpis[i : i + 5] for i in range(0, len(kpis), 5)]
-        for row in rows:
-            cols = st.columns(len(row))
-            for col, (label, value, fmt) in zip(cols, row):
-                with col:
-                    if pd.isna(value):
-                        display = "???"
-                    elif fmt == "percent":
-                        display = f"{value:.2%}"
-                    else:
-                        display = f"{value:.4f}"
-                    st.markdown(
-                        f"""
-                        <div class="kpi-card">
-                            <div class="kpi-label">{label}</div>
-                            <div class="kpi-value">{display}</div>
-                        </div>
-                        """,
-                        unsafe_allow_html=True,
-                    )
+    def render_kpi_group(title: str, kpis: list[tuple[str, float, str]], tone: str) -> None:
+        st.markdown(
+            f"<div class='section-title section-{tone}'>{title}</div>",
+            unsafe_allow_html=True,
+        )
+        st.markdown(
+            f"<div class='section-divider section-{tone}'></div>",
+            unsafe_allow_html=True,
+        )
+        for label, value, fmt in kpis:
+            if pd.isna(value):
+                display = "N/A"
+            elif fmt == "percent":
+                display = f"{value:.2%}"
+            else:
+                display = f"{value:.4f}"
+            st.markdown(
+                f"""
+                <div class="kpi-card kpi-card-{tone}">
+                    <div class="kpi-label">{label}</div>
+                    <div class="kpi-value">{display}</div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
 
-    render_kpi_group("Custom Metrics", custom_kpis)
-    st.markdown("---")
-    render_kpi_group("DeepEval Metrics", deepeval_kpis)
-    st.markdown("---")
-    render_kpi_group("RAGAS Metrics", ragas_kpis)
+    spacer_left, col1, col2, col3, spacer_right = st.columns([1, 2.2, 2.2, 2.2, 1])
+    with col1:
+        render_kpi_group("Custom Metrics", custom_kpis, "custom")
+    with col2:
+        render_kpi_group("DeepEval Metrics", deepeval_kpis, "deepeval")
+    with col3:
+        render_kpi_group("RAGAS Metrics", ragas_kpis, "ragas")
 
 
 def render_global_charts(df: pd.DataFrame) -> None:
-    left, right = st.columns([1.1, 0.9])
+    left, spacer, right = st.columns([1.1, 0.08, 0.9])
 
     with left:
         st.markdown("#### Retrieval Performance by Query Style")
@@ -528,6 +619,8 @@ def main() -> None:
     with metrics_tab:
         st.markdown("### Global Metrics")
         render_kpis(filtered_df)
+
+        st.markdown("---")
 
         st.markdown("### Global Breakdown")
         render_global_charts(filtered_df)
