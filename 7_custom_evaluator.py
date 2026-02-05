@@ -61,9 +61,9 @@ def calculate_metrics(row):
     return pd.Series([hit_rate, mrr, precision, recall])
 
 def main():
-    print(f"Loading {config.OUTPUT_EVALSET_CSV}...")
+    print(f"Loading {config.OUTPUT_RAGAS_DEEP_EVALSET_CSV}...")
     try:
-        df = pd.read_csv(config.OUTPUT_EVALSET_CSV)
+        df = pd.read_csv(config.OUTPUT_RAGAS_DEEP_EVALSET_CSV)
     except FileNotFoundError:
         print("Input file not found. Run File 2 first.")
         return
@@ -71,7 +71,12 @@ def main():
     print("Calculating metrics...")
     
     metrics_df = df.apply(calculate_metrics, axis=1)
-    metrics_df.columns = ['hit_rate', 'mrr', 'precision_at_k', 'recall_at_k']
+    metrics_df.columns = [
+        'custom_hit_rate',
+        'custom_mrr',
+        'custom_precision_at_k',
+        'custom_recall_at_k',
+    ]
     
     final_df = pd.concat([df, metrics_df], axis=1)
     
@@ -88,8 +93,15 @@ def main():
             lambda x: ast.literal_eval(x) if isinstance(x, str) else x
         )
 
+    # Persist the augmented eval set with custom metrics (new file)
+    final_df.to_csv(config.OUTPUT_FULL_EVALSET_CSV, index=False)
+
+    # Save a Parquet version for downstream apps (handles lists natively)
     final_df.to_parquet(config.OUTPUT_RESULTS_PARQUET, index=False)
-    print(f"Evaluation complete. Results saved to {config.OUTPUT_RESULTS_PARQUET}")
+    print(
+        "Evaluation complete. Results saved to "
+        f"{config.OUTPUT_FULL_EVALSET_CSV} and {config.OUTPUT_RESULTS_PARQUET}"
+    )
 
 if __name__ == "__main__":
     main()

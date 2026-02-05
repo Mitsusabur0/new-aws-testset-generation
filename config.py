@@ -6,6 +6,8 @@ KB_FOLDER = os.getenv("KB_FOLDER", "./single_file_testfolder")
 OUTPUT_TESTSET_CSV = os.getenv("OUTPUT_TESTSET_CSV", "outputs/test/testset.csv")
 RETRIEVER_INPUT_CSV = os.getenv("RETRIEVER_INPUT_CSV", "outputs/test/testset_with_actual_outputs.csv")
 OUTPUT_EVALSET_CSV = os.getenv("OUTPUT_EVALSET_CSV", "outputs/test/evaluation_set.csv")
+OUTPUT_RAGAS_DEEP_EVALSET_CSV = os.getenv("OUTPUT_RAGAS_DEEP_EVALSET_CSV", "outputs/test/Eval_set_deep_ragas.csv")
+OUTPUT_FULL_EVALSET_CSV = os.getenv("OUTPUT_FULL_EVALSET_CSV", "outputs/full/evaluation_set_full.csv")
 OUTPUT_RESULTS_PARQUET = os.getenv("OUTPUT_RESULTS_PARQUET", "outputs/full/testset_results.parquet")
 
 # --- AWS CONFIG ---
