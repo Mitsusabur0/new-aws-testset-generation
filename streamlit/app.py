@@ -380,6 +380,53 @@ div[data-testid="stVerticalBlock"] button {
     color: #ea580c;
 }
 
+/* Testcase Explorer */
+.case-block {
+    border: 1px solid rgba(148, 163, 184, 0.35);
+    border-radius: 14px;
+    background: #0f172a;
+    box-shadow: 0 18px 36px rgba(15, 23, 42, 0.12);
+    overflow: hidden;
+}
+.case-section {
+    padding: 0.95rem 1rem;
+}
+.case-section + .case-section {
+    border-top: 1px solid rgba(148, 163, 184, 0.25);
+}
+.case-title {
+    font-size: 0.75rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #cbd5f5;
+    font-weight: 600;
+    margin-bottom: 0.35rem;
+}
+.case-body {
+    white-space: pre-wrap;
+    color: #e2e8f0;
+}
+.hit-rank {
+    color: #16a34a;
+    font-weight: 700;
+}
+.hit-file {
+    color: #22c55e;
+    font-weight: 600;
+}
+.hit-badge {
+    display: inline-block;
+    margin-left: 0.5rem;
+    padding: 0.15rem 0.45rem;
+    border-radius: 999px;
+    background: rgba(34, 197, 94, 0.15);
+    border: 1px solid rgba(34, 197, 94, 0.45);
+    color: #22c55e;
+    font-size: 0.7rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
 /* Global Metrics Toggle */
 .global-metrics-toggle {
     margin: 0.25rem 0 1.25rem 0;
@@ -823,13 +870,25 @@ def render_case_explorer(df: pd.DataFrame) -> None:
     st.markdown("---")
     
     # Details Grid
-    col1, col2 = st.columns([1.5, 1])
+    col1, col_gap, col2 = st.columns([1.5, 0.15, 1])
 
     with col1:
         st.subheader("Prompt & Outputs")
-        st.markdown(f"**User Input:**\n\n{row.get('user_input', '—')}")
-        st.markdown(f"**Expected:**\n\n{row.get('expected_output', '—')}")
-        st.markdown(f"**Actual:**\n\n{row.get('actual_output', '—')}")
+        user_input = row.get("user_input", "—")
+        expected_output = row.get("expected_output", "—")
+        actual_output = row.get("actual_output", "—")
+
+        case_html = (
+            "<div class=\"case-block\">"
+            f"<div class=\"case-section\"><div class=\"case-title\">User Input</div>"
+            f"<div class=\"case-body\">{html.escape(str(user_input))}</div></div>"
+            f"<div class=\"case-section\"><div class=\"case-title\">Expected Output</div>"
+            f"<div class=\"case-body\">{html.escape(str(expected_output))}</div></div>"
+            f"<div class=\"case-section\"><div class=\"case-title\">Actual Output</div>"
+            f"<div class=\"case-body\">{html.escape(str(actual_output))}</div></div>"
+            "</div>"
+        )
+        st.markdown(case_html, unsafe_allow_html=True)
 
     with col2:
         st.subheader("Scores")
@@ -844,9 +903,11 @@ def render_case_explorer(df: pd.DataFrame) -> None:
         st.caption("DeepEval")
         score_row("Precision", row.get("deepeval_contextual_precision"))
         score_row("Recall", row.get("deepeval_contextual_recall"))
+        score_row("Relevancy", row.get("deepeval_contextual_relevancy"))
         st.caption("RAGAS")
         score_row("Precision", row.get("ragas_context_precision"))
         score_row("Recall", row.get("ragas_context_recall"))
+        score_row("Entity Recall", row.get("ragas_context_entity_recall"))
 
     st.markdown("---")
 
@@ -864,14 +925,28 @@ def render_case_explorer(df: pd.DataFrame) -> None:
         st.subheader("Retrieved Contexts")
         ret = row.get("retrieved_contexts", [])
         ret_files = row.get("retrieved_file", [])
+        source_file = str(row.get("source_file", "")).strip()
         
         if not ret:
             st.text("No contexts retrieved.")
         else:
             for i, txt in enumerate(ret):
                 fname = ret_files[i] if i < len(ret_files) else "Unknown"
-                st.markdown(f"**Rank {i+1}** (File: {fname})")
-                st.markdown(f"<div class='code-block' style='font-size:0.8em; margin-bottom:0.5rem;'>{txt}</div>", unsafe_allow_html=True)
+                is_hit = False
+                if source_file and fname:
+                    is_hit = source_file in str(fname)
+                rank_class = "hit-rank" if is_hit else ""
+                file_class = "hit-file" if is_hit else ""
+                badge_html = "<span class=\"hit-badge\">Hit</span>" if is_hit else ""
+                st.markdown(
+                    f"<div class=\"{rank_class}\">Rank {i+1}{badge_html}</div>"
+                    f"<div class=\"{file_class}\" style=\"margin-bottom: 0.35rem;\">(File: {html.escape(str(fname))})</div>",
+                    unsafe_allow_html=True,
+                )
+                st.markdown(
+                    f"<div class='code-block' style='font-size:0.8em; margin-bottom:0.5rem;'>{html.escape(str(txt))}</div>",
+                    unsafe_allow_html=True,
+                )
 
 
 def select_dataset() -> Path | None:
