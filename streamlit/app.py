@@ -129,8 +129,9 @@ html, body, [class*="css"]  {
 
 /* Background & Main Containers */
 .reportview-container {
-    background: radial-gradient(1200px 600px at 20% -10%, #e7f3ff 0%, #f7f9fc 55%, #ffffff 100%);
+    background: var(--secondary-background-color);
 }
+
 section.main > div {
     padding-top: 1.5rem;
 }
@@ -253,6 +254,11 @@ div[data-testid="stVerticalBlock"] button {
     gap: 1.4rem;
     margin-bottom: 1.25rem;
 }
+.kpi-row-vertical {
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+}
 .global-metrics-container {
     max-width: 1200px;
     margin: 0 auto;
@@ -269,6 +275,10 @@ div[data-testid="stVerticalBlock"] button {
 
 .kpi-card-score {
     border-width: 2px;
+}
+.kpi-card-highlight {
+    border-color: #22c55e !important;
+    box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.35);
 }
 
 .kpi-label {
@@ -631,72 +641,87 @@ def value_to_color(value: float | None) -> str | None:
     return f"rgb({r}, {g}, {b})"
 
 
+def _available_datasets() -> list[Path]:
+    if not DATASETS_DIR.exists():
+        return []
+    return sorted(DATASETS_DIR.glob("*.parquet"))
+
+
+def _render_kpi_cards(
+    df: pd.DataFrame,
+    title: str,
+    metrics: list[tuple[str, str, str]],
+    tone: str,
+    descriptions: dict[str, str],
+    score_first: bool = False,
+    row_class: str = "kpi-row",
+    highlight_score: bool = False,
+) -> None:
+    cards = []
+    numeric_values = []
+    for label, col_name, fmt in metrics:
+        if col_name not in df.columns:
+            continue
+        value = df[col_name].mean()
+        color = value_to_color(value)
+        if not pd.isna(value):
+            numeric_values.append(value)
+        cards.append(
+            {
+                "label": label,
+                "description": descriptions.get(label, ""),
+                "value": _format_metric_value(value, fmt),
+                "color": color,
+                "class": f"kpi-card kpi-card-{tone} kpi-card-no-border",
+            }
+        )
+
+    if numeric_values:
+        score_val = sum(numeric_values) / len(numeric_values)
+        score_card = {
+            "label": "PUNTAJE GENERAL",
+            "description": "Promedio de las métricas disponibles en esta sección.",
+            "value": _format_metric_value(score_val, "percent"),
+            "color": value_to_color(score_val),
+            "class": f"kpi-card kpi-card-{tone} kpi-card-score",
+        }
+        if highlight_score:
+            score_card["class"] = f"{score_card['class']} kpi-card-highlight"
+        if score_first:
+            cards = [score_card] + cards
+        else:
+            cards.append(score_card)
+
+    if not cards:
+        st.info(f"No hay métricas disponibles para {title}.")
+        return
+
+    def label_with_help(label: str, description: str) -> str:
+        if not description:
+            return label
+        safe_desc = html.escape(description)
+        return f"{label}<span class=\"kpi-help\" data-tooltip=\"{safe_desc}\">?</span>"
+
+    cards_html = "".join(
+        f"<div class=\"{c['class']}\">"
+        f"<div class=\"kpi-label\">"
+        f"{label_with_help(c['label'], c.get('description', ''))}"
+        f"</div>"
+        f"<div class=\"kpi-value\""
+        f"{' style=\"color: ' + c['color'] + ';\"' if c.get('color') else ''}"
+        f">{c['value']}</div>"
+        f"</div>"
+        for c in cards
+    )
+
+    st.markdown(
+        f"<div class=\"section-header theme-{tone} global-metrics-title\">{title}</div>",
+        unsafe_allow_html=True,
+    )
+    st.markdown(f"<div class=\"{row_class}\">{cards_html}</div>", unsafe_allow_html=True)
+
+
 def render_global_metrics_overview_tab(df: pd.DataFrame) -> None:
-    def render_kpi_section(
-        title: str,
-        metrics: list[tuple[str, str, str]],
-        tone: str,
-        descriptions: dict[str, str],
-    ) -> None:
-        cards = []
-        numeric_values = []
-        for label, col_name, fmt in metrics:
-            if col_name not in df.columns:
-                continue
-            value = df[col_name].mean()
-            color = value_to_color(value)
-            if not pd.isna(value):
-                numeric_values.append(value)
-            cards.append(
-                {
-                    "label": label,
-                    "description": descriptions.get(label, ""),
-                    "value": _format_metric_value(value, fmt),
-                    "color": color,
-                    "class": f"kpi-card kpi-card-{tone} kpi-card-no-border",
-                }
-            )
-
-        if numeric_values:
-            score_val = sum(numeric_values) / len(numeric_values)
-            cards.append(
-                {
-                    "label": "PUNTAJE GENERAL",
-                    "description": "Promedio de las métricas disponibles en esta sección.",
-                    "value": _format_metric_value(score_val, "percent"),
-                    "color": value_to_color(score_val),
-                    "class": f"kpi-card kpi-card-{tone} kpi-card-score",
-                }
-            )
-
-        if not cards:
-            st.info(f"No hay métricas disponibles para {title}.")
-            return
-
-        def label_with_help(label: str, description: str) -> str:
-            if not description:
-                return label
-            safe_desc = html.escape(description)
-            return f"{label}<span class=\"kpi-help\" data-tooltip=\"{safe_desc}\">?</span>"
-
-        cards_html = "".join(
-            f"<div class=\"{c['class']}\">"
-            f"<div class=\"kpi-label\">"
-            f"{label_with_help(c['label'], c.get('description', ''))}"
-            f"</div>"
-            f"<div class=\"kpi-value\""
-            f"{' style=\"color: ' + c['color'] + ';\"' if c.get('color') else ''}"
-            f">{c['value']}</div>"
-            f"</div>"
-            for c in cards
-        )
-
-        st.markdown(
-            f"<div class=\"section-header theme-{tone} global-metrics-title\">{title}</div>",
-            unsafe_allow_html=True,
-        )
-        st.markdown(f"<div class=\"kpi-row\">{cards_html}</div>", unsafe_allow_html=True)
-
     # Custom Metrics
     custom_metrics = [
         ("Tasa de aciertos", "custom_hit_rate", "percent"),
@@ -734,8 +759,9 @@ def render_global_metrics_overview_tab(df: pd.DataFrame) -> None:
     st.markdown("</div>", unsafe_allow_html=True)
 
     if selected == "Personalizado":
-        render_kpi_section(
-            "Métricas personalizadas",
+        _render_kpi_cards(
+            df,
+            "Métricas tradicionales",
             custom_metrics,
             "custom",
             metric_descriptions.get("custom", {}),
@@ -752,7 +778,8 @@ def render_global_metrics_overview_tab(df: pd.DataFrame) -> None:
             indicator_color="whitesmoke",
         )
     elif selected == "DeepEval":
-        render_kpi_section(
+        _render_kpi_cards(
+            df,
             "Métricas de DeepEval",
             deepeval_metrics,
             "deepeval",
@@ -770,7 +797,8 @@ def render_global_metrics_overview_tab(df: pd.DataFrame) -> None:
             indicator_color="whitesmoke",
         )
     else:
-        render_kpi_section(
+        _render_kpi_cards(
+            df,
             "Métricas de RAGAS",
             ragas_metrics,
             "ragas",
@@ -802,7 +830,7 @@ def render_by_query_style_tab(df: pd.DataFrame) -> None:
     render_interactive_metric_group(
         df, 
         group_id="custom", 
-        title="Métricas personalizadas", 
+        title="Métricas tradicionales", 
         metrics=custom_metrics, 
         theme_color="#2563eb", # Blue
         theme_class="theme-custom"
@@ -958,6 +986,147 @@ def render_case_explorer(df: pd.DataFrame) -> None:
                 )
 
 
+def render_compare_datasets_tab() -> None:
+    dataset_paths = _available_datasets()
+    if not dataset_paths:
+        st.error(f"No se encontraron archivos parquet en {DATASETS_DIR}")
+        return
+
+    options = [p.name for p in dataset_paths]
+    metric_descriptions = load_metric_descriptions()
+
+    custom_metrics = [
+        ("Tasa de aciertos", "custom_hit_rate", "percent"),
+        ("MRR", "custom_mrr", "float"),
+        ("Precisión@K", "custom_precision_at_k", "float"),
+        ("Cobertura@K", "custom_recall_at_k", "float"),
+    ]
+    deepeval_metrics = [
+        ("Precisión contextual", "deepeval_contextual_precision", "float"),
+        ("Cobertura contextual", "deepeval_contextual_recall", "float"),
+        ("Relevancia contextual", "deepeval_contextual_relevancy", "float"),
+    ]
+    ragas_metrics = [
+        ("Precisión de contexto", "ragas_context_precision", "float"),
+        ("Cobertura de contexto", "ragas_context_recall", "float"),
+        ("Cobertura de entidades de contexto", "ragas_context_entity_recall", "float"),
+    ]
+
+    def compute_group_score(df: pd.DataFrame, metrics: list[tuple[str, str, str]]) -> float | None:
+        values = []
+        for _, col_name, _ in metrics:
+            if col_name not in df.columns:
+                continue
+            val = df[col_name].mean()
+            if not pd.isna(val):
+                values.append(float(val))
+        if not values:
+            return None
+        return sum(values) / len(values)
+
+    def render_column(df: pd.DataFrame, highlight: dict[str, bool]) -> None:
+        if df.empty:
+            st.warning("No se encontraron datos en el conjunto seleccionado.")
+            return
+
+        st.markdown("<div style='height: 0.5rem;'></div>", unsafe_allow_html=True)
+
+        _render_kpi_cards(
+            df,
+            "Métricas tradicionales",
+            custom_metrics,
+            "custom",
+            metric_descriptions.get("custom", {}),
+            score_first=True,
+            row_class="kpi-row kpi-row-vertical",
+            highlight_score=highlight.get("custom", False),
+        )
+        st.markdown("---")
+        _render_kpi_cards(
+            df,
+            "Métricas de DeepEval",
+            deepeval_metrics,
+            "deepeval",
+            metric_descriptions.get("deepeval", {}),
+            score_first=True,
+            row_class="kpi-row kpi-row-vertical",
+            highlight_score=highlight.get("deepeval", False),
+        )
+        st.markdown("---")
+        _render_kpi_cards(
+            df,
+            "Métricas de RAGAS",
+            ragas_metrics,
+            "ragas",
+            metric_descriptions.get("ragas", {}),
+            score_first=True,
+            row_class="kpi-row kpi-row-vertical",
+            highlight_score=highlight.get("ragas", False),
+        )
+
+    col_left, col_gap, col_right = st.columns([0.85, 0.3, 0.85])
+    with col_left:
+        left_name = st.selectbox(
+            "Seleccionar conjunto de datos",
+            options,
+            key="compare_dataset_left",
+        )
+    with col_right:
+        right_name = st.selectbox(
+            "Seleccionar conjunto de datos",
+            options,
+            key="compare_dataset_right",
+        )
+
+    left_df = load_data(DATASETS_DIR / left_name)
+    right_df = load_data(DATASETS_DIR / right_name)
+
+    left_scores = {
+        "custom": compute_group_score(left_df, custom_metrics),
+        "deepeval": compute_group_score(left_df, deepeval_metrics),
+        "ragas": compute_group_score(left_df, ragas_metrics),
+    }
+    right_scores = {
+        "custom": compute_group_score(right_df, custom_metrics),
+        "deepeval": compute_group_score(right_df, deepeval_metrics),
+        "ragas": compute_group_score(right_df, ragas_metrics),
+    }
+
+    def _rounded_score(value: float | None) -> float | None:
+        if value is None:
+            return None
+        return round(value * 100, 1)
+
+    def highlight_map(
+        scores_a: dict[str, float | None],
+        scores_b: dict[str, float | None],
+        side: str,
+    ) -> dict[str, bool]:
+        out: dict[str, bool] = {}
+        for key in ("custom", "deepeval", "ragas"):
+            a = _rounded_score(scores_a.get(key))
+            b = _rounded_score(scores_b.get(key))
+            if a is None and b is None:
+                out[key] = False
+            elif b is None:
+                out[key] = side == "left"
+            elif a is None:
+                out[key] = side == "right"
+            elif a == b:
+                out[key] = True
+            else:
+                out[key] = (side == "left" and a > b) or (side == "right" and b > a)
+        return out
+
+    left_highlight = highlight_map(left_scores, right_scores, "left")
+    right_highlight = highlight_map(left_scores, right_scores, "right")
+
+    with col_left:
+        render_column(left_df, left_highlight)
+    with col_right:
+        render_column(right_df, right_highlight)
+
+
 def select_dataset() -> Path | None:
     with st.sidebar:
         st.header("Conjunto de datos")
@@ -1014,7 +1183,7 @@ def main() -> None:
         st.warning("Ningún dato coincide con los filtros seleccionados.")
         return
 
-    tab1, tab2 = st.tabs(["Métricas globales", "Explorador de casos de prueba"])
+    tab1, tab2, tab3 = st.tabs(["Métricas globales", "Explorador de casos de prueba", "Comparar datasets"])
     
     with tab1:
         render_global_metrics_overview_tab(filtered_df)
@@ -1022,6 +1191,12 @@ def main() -> None:
     with tab2:
         render_case_explorer(filtered_df)
 
+    with tab3:
+        render_compare_datasets_tab()
+
 
 if __name__ == "__main__":
     main()
+
+
+
