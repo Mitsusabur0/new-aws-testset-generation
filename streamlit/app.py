@@ -17,7 +17,7 @@ METRICS_PATH = APP_DIR / "metrics.json"
 
 
 st.set_page_config(
-    page_title="RAG Evaluation Dashboard",
+    page_title="Panel de evaluación RAG",
     page_icon=":bar_chart:",
     layout="wide",
     initial_sidebar_state="expanded",
@@ -466,12 +466,12 @@ def render_hero(df: pd.DataFrame) -> None:
     st.markdown(
         f"""
         <div class="hero">
-            <h1>RAG Evaluation Dashboard</h1>
-            <p>End-to-end view of retrieval quality, LLM grounding, and testcase-level diagnostics.</p>
+            <h1>Panel de evaluación RAG</h1>
+            <p>Vista integral de la calidad de recuperación.</p>
             <div style="margin-top: 1rem;">
-                <span class="metric-pill">{total} testcases</span>
-                <span class="metric-pill">{styles} query styles</span>
-                <span class="metric-pill">{files} source files</span>
+                <span class="metric-pill">{total} casos de prueba</span>
+                <span class="metric-pill">{styles} estilos de consulta</span>
+                <span class="metric-pill">{files} archivos fuente</span>
             </div>
         </div>
         """,
@@ -488,7 +488,7 @@ def render_query_style_chart(
 ) -> None:
     """Renders a bar chart for a single metric across query styles."""
     if "query_style" not in df.columns or metric_col not in df.columns:
-        st.info(f"Data for {metric_label} is not available.")
+        st.info(f"No hay datos disponibles para {metric_label}.")
         return
 
     # Aggregate
@@ -507,11 +507,11 @@ def render_query_style_chart(
             ),
             color=alt.value(color_hex),
             tooltip=[
-                alt.Tooltip("query_style", title="Style"),
-                alt.Tooltip(f"{metric_col}:Q", title="Score", format=".3f")
+                alt.Tooltip("query_style", title="Estilo"),
+                alt.Tooltip(f"{metric_col}:Q", title="Puntuación", format=".3f")
             ],
         )
-        .properties(height=320, title=f"Average {metric_label} by Query Style")
+        .properties(height=320, title=f"Promedio de {metric_label} por estilo de consulta")
         .configure_axis(grid=False)
         .configure_view(strokeWidth=0)
     )
@@ -561,7 +561,7 @@ def render_interactive_metric_group(
     available_metrics = [m for m in metrics if m[1] in df.columns]
     
     if not available_metrics:
-        st.warning(f"No metrics available for {title}.")
+        st.warning(f"No hay métricas disponibles para {title}.")
         return
 
     # 3. Session State Initialization for this group
@@ -573,12 +573,12 @@ def render_interactive_metric_group(
     col_kpis, col_spacer, col_chart = st.columns([1, 0.1, 2.5])
 
     with col_kpis:
-        st.markdown(f"<div style='margin-bottom: 0.5rem; font-size: 0.85rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em;'>Select Metric</div>", unsafe_allow_html=True)
+        st.markdown(f"<div style='margin-bottom: 0.5rem; font-size: 0.85rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em;'>Seleccionar métrica</div>", unsafe_allow_html=True)
         for label, col_name, fmt in available_metrics:
             # Calculate Value
             val = df[col_name].mean()
             if pd.isna(val):
-                val_str = "N/A"
+                val_str = "N/D"
             elif fmt == "percent":
                 val_str = f"{val:.1%}"
             else:
@@ -613,7 +613,7 @@ def render_interactive_metric_group(
 
 def _format_metric_value(value: float | None, fmt: str) -> str:
     if value is None or pd.isna(value):
-        return "N/A"
+        return "N/D"
     if fmt == "percent":
         return f"{value:.1%}"
     return f"{value:.3f}"
@@ -661,8 +661,8 @@ def render_global_metrics_overview_tab(df: pd.DataFrame) -> None:
             score_val = sum(numeric_values) / len(numeric_values)
             cards.append(
                 {
-                    "label": "OVERALL SCORE",
-                    "description": "Average of the available metrics in this section.",
+                    "label": "PUNTAJE GENERAL",
+                    "description": "Promedio de las métricas disponibles en esta sección.",
                     "value": _format_metric_value(score_val, "percent"),
                     "color": value_to_color(score_val),
                     "class": f"kpi-card kpi-card-{tone} kpi-card-score",
@@ -670,7 +670,7 @@ def render_global_metrics_overview_tab(df: pd.DataFrame) -> None:
             )
 
         if not cards:
-            st.info(f"No metrics available for {title}.")
+            st.info(f"No hay métricas disponibles para {title}.")
             return
 
         def label_with_help(label: str, description: str) -> str:
@@ -699,31 +699,31 @@ def render_global_metrics_overview_tab(df: pd.DataFrame) -> None:
 
     # Custom Metrics
     custom_metrics = [
-        ("Hit Rate", "custom_hit_rate", "percent"),
+        ("Tasa de aciertos", "custom_hit_rate", "percent"),
         ("MRR", "custom_mrr", "float"),
-        ("Precision@K", "custom_precision_at_k", "float"),
-        ("Recall@K", "custom_recall_at_k", "float"),
+        ("Precisión@K", "custom_precision_at_k", "float"),
+        ("Cobertura@K", "custom_recall_at_k", "float"),
     ]
     # DeepEval Metrics
     deepeval_metrics = [
-        ("Contextual Precision", "deepeval_contextual_precision", "float"),
-        ("Contextual Recall", "deepeval_contextual_recall", "float"),
-        ("Contextual Relevancy", "deepeval_contextual_relevancy", "float"),
+        ("Precisión contextual", "deepeval_contextual_precision", "float"),
+        ("Cobertura contextual", "deepeval_contextual_recall", "float"),
+        ("Relevancia contextual", "deepeval_contextual_relevancy", "float"),
     ]
 
     # RAGAS Metrics
     ragas_metrics = [
-        ("Context Precision", "ragas_context_precision", "float"),
-        ("Context Recall", "ragas_context_recall", "float"),
-        ("Context Entity Recall", "ragas_context_entity_recall", "float"),
+        ("Precisión de contexto", "ragas_context_precision", "float"),
+        ("Cobertura de contexto", "ragas_context_recall", "float"),
+        ("Cobertura de entidades de contexto", "ragas_context_entity_recall", "float"),
     ]
-    options = ["Custom", "DeepEval", "RAGAS"]
+    options = ["Personalizado", "DeepEval", "RAGAS"]
     metric_descriptions = load_metric_descriptions()
 
     st.markdown("<div class=\"global-metrics-container\">", unsafe_allow_html=True)
     st.markdown("<div class=\"global-metrics-toggle\">", unsafe_allow_html=True)
     st.radio(
-        "Global Metrics Section",
+        "Sección de métricas globales",
         options,
         index=0,
         horizontal=True,
@@ -733,9 +733,9 @@ def render_global_metrics_overview_tab(df: pd.DataFrame) -> None:
     selected = st.session_state["global_metrics_section"]
     st.markdown("</div>", unsafe_allow_html=True)
 
-    if selected == "Custom":
+    if selected == "Personalizado":
         render_kpi_section(
-            "Custom Metrics",
+            "Métricas personalizadas",
             custom_metrics,
             "custom",
             metric_descriptions.get("custom", {}),
@@ -744,7 +744,7 @@ def render_global_metrics_overview_tab(df: pd.DataFrame) -> None:
         render_interactive_metric_group(
             df,
             group_id="global_custom",
-            title="by query style",
+            title="por estilo de consulta",
             metrics=custom_metrics,
             theme_color="#2563eb",
             theme_class="",
@@ -753,7 +753,7 @@ def render_global_metrics_overview_tab(df: pd.DataFrame) -> None:
         )
     elif selected == "DeepEval":
         render_kpi_section(
-            "DeepEval Metrics",
+            "Métricas de DeepEval",
             deepeval_metrics,
             "deepeval",
             metric_descriptions.get("deepeval", {}),
@@ -762,7 +762,7 @@ def render_global_metrics_overview_tab(df: pd.DataFrame) -> None:
         render_interactive_metric_group(
             df,
             group_id="global_deepeval",
-            title="by query style",
+            title="por estilo de consulta",
             metrics=deepeval_metrics,
             theme_color="#0f766e",
             theme_class="",
@@ -771,7 +771,7 @@ def render_global_metrics_overview_tab(df: pd.DataFrame) -> None:
         )
     else:
         render_kpi_section(
-            "RAGAS Metrics",
+            "Métricas de RAGAS",
             ragas_metrics,
             "ragas",
             metric_descriptions.get("ragas", {}),
@@ -780,7 +780,7 @@ def render_global_metrics_overview_tab(df: pd.DataFrame) -> None:
         render_interactive_metric_group(
             df,
             group_id="global_ragas",
-            title="by query style",
+            title="por estilo de consulta",
             metrics=ragas_metrics,
             theme_color="#ea580c",
             theme_class="",
@@ -794,15 +794,15 @@ def render_global_metrics_overview_tab(df: pd.DataFrame) -> None:
 def render_by_query_style_tab(df: pd.DataFrame) -> None:
     # 1. Custom Metrics
     custom_metrics = [
-        ("Hit Rate", "custom_hit_rate", "percent"),
+        ("Tasa de aciertos", "custom_hit_rate", "percent"),
         ("MRR", "custom_mrr", "float"),
-        ("Precision@K", "custom_precision_at_k", "float"),
-        ("Recall@K", "custom_recall_at_k", "float"),
+        ("Precisión@K", "custom_precision_at_k", "float"),
+        ("Cobertura@K", "custom_recall_at_k", "float"),
     ]
     render_interactive_metric_group(
         df, 
         group_id="custom", 
-        title="Custom Metrics", 
+        title="Métricas personalizadas", 
         metrics=custom_metrics, 
         theme_color="#2563eb", # Blue
         theme_class="theme-custom"
@@ -810,14 +810,14 @@ def render_by_query_style_tab(df: pd.DataFrame) -> None:
 
     # 2. DeepEval Metrics
     deepeval_metrics = [
-        ("Contextual Precision", "deepeval_contextual_precision", "float"),
-        ("Contextual Recall", "deepeval_contextual_recall", "float"),
-        ("Contextual Relevancy", "deepeval_contextual_relevancy", "float"),
+        ("Precisión contextual", "deepeval_contextual_precision", "float"),
+        ("Cobertura contextual", "deepeval_contextual_recall", "float"),
+        ("Relevancia contextual", "deepeval_contextual_relevancy", "float"),
     ]
     render_interactive_metric_group(
         df, 
         group_id="deepeval", 
-        title="DeepEval Metrics", 
+        title="Métricas de DeepEval", 
         metrics=deepeval_metrics, 
         theme_color="#0f766e", # Teal
         theme_class="theme-deepeval"
@@ -825,14 +825,14 @@ def render_by_query_style_tab(df: pd.DataFrame) -> None:
 
     # 3. RAGAS Metrics
     ragas_metrics = [
-        ("Context Precision", "ragas_context_precision", "float"),
-        ("Context Recall", "ragas_context_recall", "float"),
-        ("Entity Recall", "ragas_context_entity_recall", "float"),
+        ("Precisión de contexto", "ragas_context_precision", "float"),
+        ("Cobertura de contexto", "ragas_context_recall", "float"),
+        ("Cobertura de entidades", "ragas_context_entity_recall", "float"),
     ]
     render_interactive_metric_group(
         df, 
         group_id="ragas", 
-        title="RAGAS Metrics", 
+        title="Métricas de RAGAS", 
         metrics=ragas_metrics, 
         theme_color="#ea580c", # Orange
         theme_class="theme-ragas"
@@ -840,7 +840,7 @@ def render_by_query_style_tab(df: pd.DataFrame) -> None:
 
 
 def render_case_explorer(df: pd.DataFrame) -> None:
-    st.markdown("### Testcase Explorer")
+    st.markdown("### Explorador de casos de prueba")
 
     # Table View
     display_cols = [
@@ -863,7 +863,7 @@ def render_case_explorer(df: pd.DataFrame) -> None:
         selected_idx = df.index[selected_row_idx]
 
     if selected_idx is None:
-        st.info("Select a row above to view details.")
+        st.info("Selecciona una fila arriba para ver los detalles.")
         return
 
     row = df.loc[selected_idx]
@@ -874,25 +874,25 @@ def render_case_explorer(df: pd.DataFrame) -> None:
     col1, col_gap, col2 = st.columns([1.5, 0.15, 1])
 
     with col1:
-        st.subheader("Prompt & Outputs")
+        st.subheader("Prompt y salidas")
         user_input = row.get("user_input", "—")
         expected_output = row.get("expected_output", "—")
         actual_output = row.get("actual_output", "—")
 
         case_html = (
             "<div class=\"case-block\">"
-            f"<div class=\"case-section\"><div class=\"case-title\">User Input</div>"
+            f"<div class=\"case-section\"><div class=\"case-title\">Entrada del usuario</div>"
             f"<div class=\"case-body\">{html.escape(str(user_input))}</div></div>"
-            f"<div class=\"case-section\"><div class=\"case-title\">Expected Output</div>"
+            f"<div class=\"case-section\"><div class=\"case-title\">Salida esperada</div>"
             f"<div class=\"case-body\">{html.escape(str(expected_output))}</div></div>"
-            f"<div class=\"case-section\"><div class=\"case-title\">Actual Output</div>"
+            f"<div class=\"case-section\"><div class=\"case-title\">Salida real</div>"
             f"<div class=\"case-body\">{html.escape(str(actual_output))}</div></div>"
             "</div>"
         )
         st.markdown(case_html, unsafe_allow_html=True)
 
     with col2:
-        st.subheader("Scores")
+        st.subheader("Puntuaciones")
         # Helper to render a score row
         def score_row(label, val, fmt=".4f"):
             if pd.isna(val): return
@@ -908,48 +908,48 @@ def render_case_explorer(df: pd.DataFrame) -> None:
             )
 
         score_row("MRR", row.get("custom_mrr"))
-        score_row("Hit Rate", row.get("custom_hit_rate"))
+        score_row("Tasa de aciertos", row.get("custom_hit_rate"))
         st.caption("DeepEval")
-        score_row("Precision", row.get("deepeval_contextual_precision"))
-        score_row("Recall", row.get("deepeval_contextual_recall"))
-        score_row("Relevancy", row.get("deepeval_contextual_relevancy"))
+        score_row("Precisión", row.get("deepeval_contextual_precision"))
+        score_row("Cobertura", row.get("deepeval_contextual_recall"))
+        score_row("Relevancia", row.get("deepeval_contextual_relevancy"))
         st.caption("RAGAS")
-        score_row("Precision", row.get("ragas_context_precision"))
-        score_row("Recall", row.get("ragas_context_recall"))
-        score_row("Entity Recall", row.get("ragas_context_entity_recall"))
+        score_row("Precisión", row.get("ragas_context_precision"))
+        score_row("Cobertura", row.get("ragas_context_recall"))
+        score_row("Cobertura de entidades", row.get("ragas_context_entity_recall"))
 
     st.markdown("---")
 
     # Contexts
     c1, c2 = st.columns(2)
     with c1:
-        st.subheader("Ground Truth Context")
+        st.subheader("Contexto de referencia")
         gt = row.get("reference_contexts", [])
         if gt:
             st.markdown(f"<div class='code-block'>{"\n\n".join(str(x) for x in gt)}</div>", unsafe_allow_html=True)
         else:
-            st.text("No ground truth context.")
+            st.text("No hay contexto de referencia.")
 
     with c2:
-        st.subheader("Retrieved Contexts")
+        st.subheader("Contextos recuperados")
         ret = row.get("retrieved_contexts", [])
         ret_files = row.get("retrieved_file", [])
         source_file = str(row.get("source_file", "")).strip()
         
         if not ret:
-            st.text("No contexts retrieved.")
+            st.text("No se recuperaron contextos.")
         else:
             for i, txt in enumerate(ret):
-                fname = ret_files[i] if i < len(ret_files) else "Unknown"
+                fname = ret_files[i] if i < len(ret_files) else "Desconocido"
                 is_hit = False
                 if source_file and fname:
                     is_hit = source_file in str(fname)
                 rank_class = "hit-rank" if is_hit else ""
                 file_class = "hit-file" if is_hit else ""
-                badge_html = "<span class=\"hit-badge\">Hit</span>" if is_hit else ""
+                badge_html = "<span class=\"hit-badge\">Acierto</span>" if is_hit else ""
                 st.markdown(
-                    f"<div class=\"{rank_class}\">Rank {i+1}{badge_html}</div>"
-                    f"<div class=\"{file_class}\" style=\"margin-bottom: 0.35rem;\">(File: {html.escape(str(fname))})</div>",
+                    f"<div class=\"{rank_class}\">Rango {i+1}{badge_html}</div>"
+                    f"<div class=\"{file_class}\" style=\"margin-bottom: 0.35rem;\">(Archivo: {html.escape(str(fname))})</div>",
                     unsafe_allow_html=True,
                 )
                 st.markdown(
@@ -960,30 +960,30 @@ def render_case_explorer(df: pd.DataFrame) -> None:
 
 def select_dataset() -> Path | None:
     with st.sidebar:
-        st.header("Dataset")
+        st.header("Conjunto de datos")
         if not DATASETS_DIR.exists():
-            st.error(f"Dataset folder not found: {DATASETS_DIR}")
+            st.error(f"No se encontró la carpeta de conjuntos de datos: {DATASETS_DIR}")
             return None
         parquet_files = sorted(DATASETS_DIR.glob("*.parquet"))
         if not parquet_files:
-            st.error(f"No parquet files found in {DATASETS_DIR}")
+            st.error(f"No se encontraron archivos parquet en {DATASETS_DIR}")
             return None
         options = [p.name for p in parquet_files]
-        selected_name = st.selectbox("Select dataset", options)
+        selected_name = st.selectbox("Seleccionar conjunto de datos", options)
         return DATASETS_DIR / selected_name
 
 
 def render_filters(df: pd.DataFrame) -> pd.DataFrame:
     with st.sidebar:
-        st.header("Filters")
+        st.header("Filtros")
 
         # Style Filter
         if "query_style" in df.columns:
             all_styles = sorted(df["query_style"].dropna().unique())
-            sel_styles = st.multiselect("Query Style", all_styles, default=all_styles)
+            sel_styles = st.multiselect("Estilo de consulta", all_styles, default=all_styles)
         else:
             sel_styles = []
-        failures_only = st.toggle("Show Failures Only (Hit=0)", False)
+        failures_only = st.toggle("Mostrar solo fallos (Acierto=0)", False)
 
     # Apply Logic
     out = df.copy()
@@ -1003,7 +1003,7 @@ def main() -> None:
 
     df = load_data(dataset_path)
     if df.empty:
-        st.error(f"No data found in selected dataset: {dataset_path.name}")
+        st.error(f"No se encontraron datos en el conjunto de datos seleccionado: {dataset_path.name}")
         return
 
     render_hero(df)
@@ -1011,10 +1011,10 @@ def main() -> None:
     filtered_df = render_filters(df)
     
     if filtered_df.empty:
-        st.warning("No data matches the selected filters.")
+        st.warning("Ningún dato coincide con los filtros seleccionados.")
         return
 
-    tab1, tab2 = st.tabs(["Global Metrics", "Testcase Explorer"])
+    tab1, tab2 = st.tabs(["Métricas globales", "Explorador de casos de prueba"])
     
     with tab1:
         render_global_metrics_overview_tab(filtered_df)
