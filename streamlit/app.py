@@ -12,8 +12,7 @@ import altair as alt
 
 
 APP_DIR = Path(__file__).parent
-PARQUET_PATH = APP_DIR / "testset_results.parquet"
-CSV_PATH = APP_DIR / "evaluation_set_full.csv"
+DATASETS_DIR = APP_DIR / "complete_datasets"
 METRICS_PATH = APP_DIR / "metrics.json"
 
 
@@ -55,16 +54,10 @@ def _coerce_numeric(df: pd.DataFrame, cols: Iterable[str]) -> pd.DataFrame:
 
 
 @st.cache_data(show_spinner=False)
-def load_data() -> pd.DataFrame:
-    if PARQUET_PATH.exists():
-        df = pd.read_parquet(PARQUET_PATH)
-    elif CSV_PATH.exists():
-        try:
-            df = pd.read_csv(CSV_PATH, encoding="utf-8")
-        except UnicodeDecodeError:
-            df = pd.read_csv(CSV_PATH, encoding="latin-1")
-    else:
+def load_data(dataset_path: Path) -> pd.DataFrame:
+    if not dataset_path.exists():
         return pd.DataFrame()
+    df = pd.read_parquet(dataset_path)
 
     list_cols = ["reference_contexts", "retrieved_contexts", "retrieved_file"]
     for col in list_cols:
@@ -881,43 +874,38 @@ def render_case_explorer(df: pd.DataFrame) -> None:
                 st.markdown(f"<div class='code-block' style='font-size:0.8em; margin-bottom:0.5rem;'>{txt}</div>", unsafe_allow_html=True)
 
 
+def select_dataset() -> Path | None:
+    with st.sidebar:
+        st.header("Dataset")
+        if not DATASETS_DIR.exists():
+            st.error(f"Dataset folder not found: {DATASETS_DIR}")
+            return None
+        parquet_files = sorted(DATASETS_DIR.glob("*.parquet"))
+        if not parquet_files:
+            st.error(f"No parquet files found in {DATASETS_DIR}")
+            return None
+        options = [p.name for p in parquet_files]
+        selected_name = st.selectbox("Select dataset", options)
+        return DATASETS_DIR / selected_name
+
+
 def render_filters(df: pd.DataFrame) -> pd.DataFrame:
     with st.sidebar:
         st.header("Filters")
-        
-        # Text Search
-        search = st.text_input("Search User Input", placeholder="Keywords...")
-        
+
         # Style Filter
         if "query_style" in df.columns:
             all_styles = sorted(df["query_style"].dropna().unique())
             sel_styles = st.multiselect("Query Style", all_styles, default=all_styles)
         else:
             sel_styles = []
-            
-        # File Filter
-        if "source_file" in df.columns:
-            all_files = sorted(df["source_file"].dropna().unique())
-            sel_files = st.multiselect("Source File", all_files, default=all_files)
-        else:
-            sel_files = []
-
-        # Metric Filter
-        min_mrr = st.slider("Min MRR", 0.0, 1.0, 0.0)
         failures_only = st.toggle("Show Failures Only (Hit=0)", False)
 
     # Apply Logic
     out = df.copy()
-    if search:
-        out = out[out["user_input"].str.contains(search, case=False, na=False)]
     if sel_styles:
         out = out[out["query_style"].isin(sel_styles)]
-    if sel_files:
-        out = out[out["source_file"].isin(sel_files)]
-    
-    if "custom_mrr" in out.columns:
-        out = out[out["custom_mrr"].fillna(0) >= min_mrr]
-    
+
     if failures_only and "custom_hit_rate" in out.columns:
         out = out[out["custom_hit_rate"].fillna(0) == 0]
         
@@ -925,9 +913,13 @@ def render_filters(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def main() -> None:
-    df = load_data()
+    dataset_path = select_dataset()
+    if dataset_path is None:
+        return
+
+    df = load_data(dataset_path)
     if df.empty:
-        st.error("No data found. Please add 'testset_results.parquet' or 'evaluation_set_full.csv' to the app directory.")
+        st.error(f"No data found in selected dataset: {dataset_path.name}")
         return
 
     render_hero(df)
