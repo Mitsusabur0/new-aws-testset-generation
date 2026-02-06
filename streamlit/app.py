@@ -279,7 +279,7 @@ div[data-testid="stVerticalBlock"] button {
 }
 
 .kpi-label {
-    font-size: calc(0.78rem + 4px);
+    font-size: 1rem;
     letter-spacing: 0.08em;
     text-transform: uppercase;
     color: lightgrey;
@@ -288,6 +288,7 @@ div[data-testid="stVerticalBlock"] button {
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    text-transform: none;
     width: 16px;
     height: 16px;
     margin-left: 6px;
@@ -297,6 +298,46 @@ div[data-testid="stVerticalBlock"] button {
     font-size: 0.7rem;
     line-height: 1;
     cursor: help;
+    position: relative;
+}
+.kpi-help::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    left: 50%;
+    top: calc(100% + 8px);
+    transform: translateX(-50%);
+    background: rgba(15, 23, 42, 0.96);
+    color: #e2e8f0;
+    padding: 0.5rem 0.65rem;
+    border-radius: 8px;
+    font-size: 1rem;
+    line-height: 1.25;
+    letter-spacing: 0.01em;
+    width: max-content;
+    max-width: 280px;
+    white-space: normal;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 140ms ease, transform 140ms ease;
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.35);
+    z-index: 5;
+}
+.kpi-help::before {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: calc(100% + 2px);
+    transform: translateX(-50%);
+    border-width: 6px;
+    border-style: solid;
+    border-color: rgba(15, 23, 42, 0.96) transparent transparent transparent;
+    opacity: 0;
+    transition: opacity 140ms ease, transform 140ms ease;
+    z-index: 6;
+}
+.kpi-help:hover::after,
+.kpi-help:hover::before {
+    opacity: 1;
 }
 .kpi-value {
     font-size: calc(1.6rem + 4px);
@@ -580,7 +621,7 @@ def render_global_metrics_overview_tab(df: pd.DataFrame) -> None:
             cards.append(
                 {
                     "label": "OVERALL SCORE",
-                    "description": "",
+                    "description": "Average of the available metrics in this section.",
                     "value": _format_metric_value(score_val, "percent"),
                     "color": value_to_color(score_val),
                     "class": f"kpi-card kpi-card-{tone} kpi-card-score",
@@ -595,7 +636,7 @@ def render_global_metrics_overview_tab(df: pd.DataFrame) -> None:
             if not description:
                 return label
             safe_desc = html.escape(description)
-            return f"{label}<span class=\"kpi-help\" title=\"{safe_desc}\">?</span>"
+            return f"{label}<span class=\"kpi-help\" data-tooltip=\"{safe_desc}\">?</span>"
 
         cards_html = "".join(
             f"<div class=\"{c['class']}\">"
