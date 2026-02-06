@@ -4,6 +4,8 @@ gold_full_actuales/
 gold_subset/
 gold/
 gold_full/
+kb_full/
+
 
 
 # Github's default gitignore for Python
