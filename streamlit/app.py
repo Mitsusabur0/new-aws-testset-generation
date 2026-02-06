@@ -619,18 +619,19 @@ def _format_metric_value(value: float | None, fmt: str) -> str:
     return f"{value:.3f}"
 
 
-def render_global_metrics_overview_tab(df: pd.DataFrame) -> None:
-    def value_to_color(value: float | None) -> str | None:
-        if value is None or pd.isna(value):
-            return None
-        v = max(0.0, min(1.0, float(value)))
-        # Skew toward red so mid values stay warmer (more red) than green.
-        v = v ** 2
-        r = int(round(214 * (1 - v) + 16 * v))  # 0->#d65151, 1->#10b981
-        g = int(round(81 * (1 - v) + 185 * v))
-        b = int(round(81 * (1 - v) + 129 * v))
-        return f"rgb({r}, {g}, {b})"
+def value_to_color(value: float | None) -> str | None:
+    if value is None or pd.isna(value):
+        return None
+    v = max(0.0, min(1.0, float(value)))
+    # Skew toward red so mid values stay warmer (more red) than green.
+    v = v ** 2
+    r = int(round(214 * (1 - v) + 16 * v))  # 0->#d65151, 1->#10b981
+    g = int(round(81 * (1 - v) + 185 * v))
+    b = int(round(81 * (1 - v) + 129 * v))
+    return f"rgb({r}, {g}, {b})"
 
+
+def render_global_metrics_overview_tab(df: pd.DataFrame) -> None:
     def render_kpi_section(
         title: str,
         metrics: list[tuple[str, str, str]],
@@ -896,7 +897,15 @@ def render_case_explorer(df: pd.DataFrame) -> None:
         def score_row(label, val, fmt=".4f"):
             if pd.isna(val): return
             v_str = f"{val:{fmt}}" if isinstance(val, float) else str(val)
-            st.markdown(f"**{label}:** `{v_str}`")
+            try:
+                color = value_to_color(val)
+            except (TypeError, ValueError):
+                color = None
+            color_style = f" style=\"color: {color}; font-weight: 600;\"" if color else ""
+            st.markdown(
+                f"**{label}:** <span{color_style}>{html.escape(v_str)}</span>",
+                unsafe_allow_html=True,
+            )
 
         score_row("MRR", row.get("custom_mrr"))
         score_row("Hit Rate", row.get("custom_hit_rate"))
