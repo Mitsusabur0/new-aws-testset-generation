@@ -1,8 +1,6 @@
 from __future__ import annotations
 
 import ast
-import html
-import json
 from pathlib import Path
 from typing import Any, Iterable
 
@@ -14,7 +12,6 @@ import altair as alt
 APP_DIR = Path(__file__).parent
 PARQUET_PATH = APP_DIR / "testset_results.parquet"
 CSV_PATH = APP_DIR / "evaluation_set_full.csv"
-METRICS_PATH = APP_DIR / "metrics.json"
 
 
 st.set_page_config(
@@ -96,32 +93,6 @@ def load_data() -> pd.DataFrame:
         )
 
     return df
-
-
-@st.cache_data(show_spinner=False)
-def load_metric_descriptions() -> dict[str, dict[str, str]]:
-    if not METRICS_PATH.exists():
-        return {}
-    try:
-        payload = json.loads(METRICS_PATH.read_text(encoding="utf-8"))
-    except Exception:
-        return {}
-
-    out: dict[str, dict[str, str]] = {}
-    for group, items in payload.items():
-        if not isinstance(items, list):
-            continue
-        group_map: dict[str, str] = {}
-        for item in items:
-            if not isinstance(item, dict):
-                continue
-            name = str(item.get("name", "")).strip()
-            desc = str(item.get("description", "")).strip()
-            if name and desc:
-                group_map[name] = desc
-        if group_map:
-            out[group] = group_map
-    return out
 
 
 # --- STYLING ---
@@ -284,20 +255,6 @@ div[data-testid="stVerticalBlock"] button {
     text-transform: uppercase;
     color: lightgrey;
 }
-.kpi-help {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 16px;
-    height: 16px;
-    margin-left: 6px;
-    border-radius: 999px;
-    border: 1px solid rgba(148, 163, 184, 0.7);
-    color: #cbd5f5;
-    font-size: 0.7rem;
-    line-height: 1;
-    cursor: help;
-}
 .kpi-value {
     font-size: calc(1.6rem + 4px);
     font-weight: 600;
@@ -443,9 +400,7 @@ def render_interactive_metric_group(
     title: str,
     metrics: list[tuple[str, str, str]],  # (Label, Column, Format)
     theme_color: str,
-    theme_class: str,
-    header_class: str | None = None,
-    indicator_color: str | None = None,
+    theme_class: str
 ) -> None:
     """
     Renders a 2-column layout:
@@ -454,26 +409,14 @@ def render_interactive_metric_group(
     """
     
     # 1. Header
-    header_classes = "section-header"
-    if theme_class:
-        header_classes = f"{header_classes} {theme_class}"
-    if header_class:
-        header_classes = f"{header_classes} {header_class}"
-
-    indicator_class = theme_class.replace("theme-", "bg-") if theme_class else ""
-    indicator_style = f" style=\"background: {indicator_color};\"" if indicator_color else ""
-    indicator_html = ""
-    if indicator_class or indicator_color:
-        indicator_html = f"<div class=\"section-indicator {indicator_class}\"{indicator_style}></div>"
-
     st.markdown(
         f"""
-        <div class="{header_classes}">
-            {indicator_html}
+        <div class="section-header {theme_class}">
+            <div class="section-indicator {theme_class.replace('theme-', 'bg-')}"></div>
             {title}
         </div>
-        """,
-        unsafe_allow_html=True,
+        """, 
+        unsafe_allow_html=True
     )
 
     # 2. Filter available metrics
@@ -554,7 +497,6 @@ def render_global_metrics_overview_tab(df: pd.DataFrame) -> None:
         title: str,
         metrics: list[tuple[str, str, str]],
         tone: str,
-        descriptions: dict[str, str],
     ) -> None:
         cards = []
         numeric_values = []
@@ -568,7 +510,6 @@ def render_global_metrics_overview_tab(df: pd.DataFrame) -> None:
             cards.append(
                 {
                     "label": label,
-                    "description": descriptions.get(label, ""),
                     "value": _format_metric_value(value, fmt),
                     "color": color,
                     "class": f"kpi-card kpi-card-{tone} kpi-card-no-border",
@@ -580,7 +521,6 @@ def render_global_metrics_overview_tab(df: pd.DataFrame) -> None:
             cards.append(
                 {
                     "label": "OVERALL SCORE",
-                    "description": "",
                     "value": _format_metric_value(score_val, "percent"),
                     "color": value_to_color(score_val),
                     "class": f"kpi-card kpi-card-{tone} kpi-card-score",
@@ -591,17 +531,9 @@ def render_global_metrics_overview_tab(df: pd.DataFrame) -> None:
             st.info(f"No metrics available for {title}.")
             return
 
-        def label_with_help(label: str, description: str) -> str:
-            if not description:
-                return label
-            safe_desc = html.escape(description)
-            return f"{label}<span class=\"kpi-help\" title=\"{safe_desc}\">?</span>"
-
         cards_html = "".join(
             f"<div class=\"{c['class']}\">"
-            f"<div class=\"kpi-label\">"
-            f"{label_with_help(c['label'], c.get('description', ''))}"
-            f"</div>"
+            f"<div class=\"kpi-label\">{c['label']}</div>"
             f"<div class=\"kpi-value\""
             f"{' style=\"color: ' + c['color'] + ';\"' if c.get('color') else ''}"
             f">{c['value']}</div>"
@@ -636,7 +568,6 @@ def render_global_metrics_overview_tab(df: pd.DataFrame) -> None:
         ("Context Entity Recall", "ragas_context_entity_recall", "float"),
     ]
     options = ["Custom", "DeepEval", "RAGAS"]
-    metric_descriptions = load_metric_descriptions()
 
     st.markdown("<div class=\"global-metrics-container\">", unsafe_allow_html=True)
     st.markdown("<div class=\"global-metrics-toggle\">", unsafe_allow_html=True)
@@ -652,59 +583,11 @@ def render_global_metrics_overview_tab(df: pd.DataFrame) -> None:
     st.markdown("</div>", unsafe_allow_html=True)
 
     if selected == "Custom":
-        render_kpi_section(
-            "Custom Metrics",
-            custom_metrics,
-            "custom",
-            metric_descriptions.get("custom", {}),
-        )
-        st.markdown("---")
-        render_interactive_metric_group(
-            df,
-            group_id="global_custom",
-            title="by query style",
-            metrics=custom_metrics,
-            theme_color="#2563eb",
-            theme_class="",
-            header_class="global-metrics-title",
-            indicator_color="whitesmoke",
-        )
+        render_kpi_section("Custom Metrics", custom_metrics, "custom")
     elif selected == "DeepEval":
-        render_kpi_section(
-            "DeepEval Metrics",
-            deepeval_metrics,
-            "deepeval",
-            metric_descriptions.get("deepeval", {}),
-        )
-        st.markdown("---")
-        render_interactive_metric_group(
-            df,
-            group_id="global_deepeval",
-            title="by query style",
-            metrics=deepeval_metrics,
-            theme_color="#0f766e",
-            theme_class="",
-            header_class="global-metrics-title",
-            indicator_color="whitesmoke",
-        )
+        render_kpi_section("DeepEval Metrics", deepeval_metrics, "deepeval")
     else:
-        render_kpi_section(
-            "RAGAS Metrics",
-            ragas_metrics,
-            "ragas",
-            metric_descriptions.get("ragas", {}),
-        )
-        st.markdown("---")
-        render_interactive_metric_group(
-            df,
-            group_id="global_ragas",
-            title="by query style",
-            metrics=ragas_metrics,
-            theme_color="#ea580c",
-            theme_class="",
-            header_class="global-metrics-title",
-            indicator_color="whitesmoke",
-        )
+        render_kpi_section("RAGAS Metrics", ragas_metrics, "ragas")
 
     st.markdown("</div>", unsafe_allow_html=True)
 
@@ -897,12 +780,15 @@ def main() -> None:
         st.warning("No data matches the selected filters.")
         return
 
-    tab1, tab2 = st.tabs(["Global Metrics", "Testcase Explorer"])
+    tab1, tab2, tab3 = st.tabs(["Global Metrics", "By Query Style", "Testcase Explorer"])
     
     with tab1:
         render_global_metrics_overview_tab(filtered_df)
-
+        
     with tab2:
+        render_by_query_style_tab(filtered_df)
+
+    with tab3:
         render_case_explorer(filtered_df)
 
 

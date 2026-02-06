@@ -1,0 +1,48 @@
+{
+  "custom": [
+    {
+      "name": "MRR",
+      "description": "Evaluates the ranking quality by calculating the average of the reciprocal ranks of the first relevant document. A score of 1.0 means the first result is always relevant, while lower scores indicate relevant results appear further down the list."
+    },
+    {
+      "name": "Hit Rate",
+      "description": "The percentage of queries for which at least one relevant document is retrieved within the top-k results. It is a binary metric indicating how often the system successfully finds at least one piece of correct information."
+    },
+    {
+      "name": "Precision@K",
+      "description": "The proportion of retrieved documents in the top-k results that are relevant. It measures how much 'noise' is retrieved alongside the correct information; a higher score indicates a cleaner, more accurate result list."
+    },
+    {
+      "name": "Recall@K",
+      "description": "The proportion of all relevant documents existing in the entire dataset that were successfully retrieved in the top-k results. It measures the system's coverage and ability to find all available relevant information."
+    }
+  ],
+  "deepeval": [
+    {
+      "name": "Contextual Precision",
+      "description": "Measures the signal-to-noise ratio within your retrieved context. It calculates the proportion of retrieved nodes that are relevant to the query, ensuring that relevant chunks are ranked higher than irrelevant ones."
+    },
+    {
+      "name": "Contextual Recall",
+      "description": "Assesses if the retrieved context aligns with the expected output (ground truth). It determines whether the context contains all the necessary information required to generate the correct answer."
+    },
+    {
+      "name": "Contextual Relevancy",
+      "description": "Evaluates the relevance of the retrieved context specifically to the user's input query. It uses an LLM to determine if the content provided in the context is actually helpful for answering the specific question asked, regardless of ranking."
+    }
+  ],
+  "ragas": [
+    {
+      "name": "Context Precision",
+      "description": "Evaluates whether relevant items in the context are ranked higher than irrelevant ones. It is calculated by determining the precision at k for the retrieved chunks and averaging them, rewarding systems that present useful data first."
+    },
+    {
+      "name": "Context Recall",
+      "description": "Measures the extent to which the retrieved context matches the ground truth answer. It analyzes the context to ensure that the factual statements required to derive the correct answer are present."
+    },
+    {
+      "name": "Context Entity Recall",
+      "description": "Calculates the recall of specific named entities (such as people, organizations, or locations) in the retrieved context compared to the entities present in the ground truth. This is vital for domains where specific terminology is critical."
+    }
+  ]
+}
