@@ -13,15 +13,12 @@ import config
 
 # --- CONFIG ---
 # INPUT_CSV_PATH = os.getenv("EXPECTED_INPUT_CSV_PATH", config.OUTPUT_TESTSET_CSV)
-INPUT_CSV_PATH = "outputs/test/testset.csv"
+INPUT_CSV_PATH = "outputs/subset/testset.csv"
 
-OUTPUT_CSV_PATH = os.getenv(
-    "EXPECTED_OUTPUT_CSV_PATH",
-    "outputs/test/testset_with_expected_outputs.csv"
-)
+OUTPUT_CSV_PATH = "outputs/subset/2_testset_with_expected_outputs.csv"
+
 MODEL_ID = os.getenv(
     "EXPECTED_OUTPUT_MODEL_ID",
-    # "anthropic.claude-3-5-haiku-20241022-v1:0"
     "us.anthropic.claude-3-5-haiku-20241022-v1:0"
 )
 AWS_REGION = os.getenv("EXPECTED_OUTPUT_AWS_REGION", config.AWS_REGION)

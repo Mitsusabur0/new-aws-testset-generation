@@ -301,7 +301,85 @@ def render_hero(df: pd.DataFrame) -> None:
     )
 
 
-def render_kpis(df: pd.DataFrame) -> None:
+def render_kpi_group(title: str, kpis: list[tuple[str, float, str]], tone: str) -> None:
+    st.markdown(
+        f"<div class='section-title section-{tone}'>{title}</div>",
+        unsafe_allow_html=True,
+    )
+    st.markdown(
+        f"<div class='section-divider section-{tone}'></div>",
+        unsafe_allow_html=True,
+    )
+    for label, value, fmt in kpis:
+        if pd.isna(value):
+            display = "N/A"
+        elif fmt == "percent":
+            display = f"{value:.2%}"
+        else:
+            display = f"{value:.4f}"
+        st.markdown(
+            f"""
+            <div class="kpi-card kpi-card-{tone}">
+                <div class="kpi-label">{label}</div>
+                <div class="kpi-value">{display}</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+
+def render_query_style_chart(
+    df: pd.DataFrame,
+    metrics: list[str],
+    label_map: dict[str, str],
+    colors: list[str],
+    title: str,
+    stacked: bool = False,
+    y_domain: tuple[float, float] | None = None,
+) -> None:
+    st.markdown(f"#### {title}")
+    if "query_style" not in df.columns:
+        st.info("No query_style column found.")
+        return
+
+    available_metrics = [metric for metric in metrics if metric in df.columns]
+    if not available_metrics:
+        st.info("No metrics available for this chart.")
+        return
+
+    grouped = (
+        df.groupby("query_style")[available_metrics]
+        .mean()
+        .reset_index()
+        .melt("query_style", var_name="metric", value_name="value")
+    )
+    grouped["metric_label"] = grouped["metric"].map(label_map).fillna(grouped["metric"])
+
+    chart = (
+        alt.Chart(grouped)
+        .mark_bar(cornerRadiusTopLeft=4, cornerRadiusTopRight=4)
+        .encode(
+            x=alt.X("query_style:N", title="Query Style"),
+            y=alt.Y(
+                "value:Q",
+                title="Average",
+                stack="zero" if stacked else None,
+                scale=alt.Scale(domain=y_domain) if y_domain else alt.Undefined,
+            ),
+            color=alt.Color(
+                "metric_label:N",
+                scale=alt.Scale(range=colors),
+                sort=[label_map.get(metric, metric) for metric in available_metrics],
+                legend=alt.Legend(title="Metric") if len(available_metrics) > 1 else None,
+            ),
+            tooltip=["query_style", "metric_label", alt.Tooltip("value:Q", format=".3f")],
+        )
+        .properties(height=220)
+    )
+    st.altair_chart(chart, use_container_width=True)
+
+
+def render_global_sections(df: pd.DataFrame) -> None:
     custom_kpis = [
         ("Hit Rate", df.get("custom_hit_rate", pd.Series(dtype=float)).mean(), "percent"),
         ("MRR", df.get("custom_mrr", pd.Series(dtype=float)).mean(), "float"),
@@ -310,146 +388,135 @@ def render_kpis(df: pd.DataFrame) -> None:
     ]
 
     deepeval_kpis = [
-        ("DeepEval Precision", df.get("deepeval_contextual_precision", pd.Series(dtype=float)).mean(), "float"),
-        ("DeepEval Recall", df.get("deepeval_contextual_recall", pd.Series(dtype=float)).mean(), "float"),
-        ("DeepEval Relevancy", df.get("deepeval_contextual_relevancy", pd.Series(dtype=float)).mean(), "float"),
+        (
+            "Precision",
+            df.get("deepeval_contextual_precision", pd.Series(dtype=float)).mean(),
+            "float",
+            "deepeval_contextual_precision",
+        ),
+        (
+            "Recall",
+            df.get("deepeval_contextual_recall", pd.Series(dtype=float)).mean(),
+            "float",
+            "deepeval_contextual_recall",
+        ),
+        (
+            "Relevancy",
+            df.get("deepeval_contextual_relevancy", pd.Series(dtype=float)).mean(),
+            "float",
+            "deepeval_contextual_relevancy",
+        ),
     ]
 
     ragas_kpis = [
-        ("RAGAS Precision", df.get("ragas_context_precision", pd.Series(dtype=float)).mean(), "float"),
-        ("RAGAS Recall", df.get("ragas_context_recall", pd.Series(dtype=float)).mean(), "float"),
-        ("Entity Recall", df.get("ragas_context_entity_recall", pd.Series(dtype=float)).mean(), "float"),
+        ("Precision", df.get("ragas_context_precision", pd.Series(dtype=float)).mean(), "float", "ragas_context_precision"),
+        ("Recall", df.get("ragas_context_recall", pd.Series(dtype=float)).mean(), "float", "ragas_context_recall"),
+        ("Entity Recall", df.get("ragas_context_entity_recall", pd.Series(dtype=float)).mean(), "float", "ragas_context_entity_recall"),
     ]
 
-    def render_kpi_group(title: str, kpis: list[tuple[str, float, str]], tone: str) -> None:
-        st.markdown(
-            f"<div class='section-title section-{tone}'>{title}</div>",
-            unsafe_allow_html=True,
-        )
-        st.markdown(
-            f"<div class='section-divider section-{tone}'></div>",
-            unsafe_allow_html=True,
-        )
-        for label, value, fmt in kpis:
-            if pd.isna(value):
-                display = "N/A"
-            elif fmt == "percent":
-                display = f"{value:.2%}"
-            else:
-                display = f"{value:.4f}"
-            st.markdown(
-                f"""
-                <div class="kpi-card kpi-card-{tone}">
-                    <div class="kpi-label">{label}</div>
-                    <div class="kpi-value">{display}</div>
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
-
-    spacer_left, col1, col2, col3, spacer_right = st.columns([1, 2.2, 2.2, 2.2, 1])
-    with col1:
-        render_kpi_group("Custom Metrics", custom_kpis, "custom")
-    with col2:
-        render_kpi_group("DeepEval Metrics", deepeval_kpis, "deepeval")
-    with col3:
-        render_kpi_group("RAGAS Metrics", ragas_kpis, "ragas")
-
-
-def render_global_charts(df: pd.DataFrame) -> None:
-    left, spacer, right = st.columns([1.1, 0.08, 0.9])
-
+    st.markdown("### Custom Metrics")
+    left, spacer, right = st.columns([1.05, 0.08, 1.25])
     with left:
-        st.markdown("#### Retrieval Performance by Query Style")
-        if "query_style" in df.columns:
-            grouped = (
-                df.groupby("query_style")[
-                    ["custom_hit_rate", "custom_mrr"]
-                ]
-                .mean()
-                .reset_index()
-                .melt("query_style", var_name="metric", value_name="value")
-            )
-            chart = (
-                alt.Chart(grouped)
-                .mark_bar(cornerRadiusTopLeft=4, cornerRadiusTopRight=4)
-                .encode(
-                    x=alt.X("query_style:N", title="Query Style"),
-                    y=alt.Y("value:Q", title="Average"),
-                    color=alt.Color("metric:N", scale=alt.Scale(range=["#2563eb", "#0f766e"])),
-                    tooltip=["query_style", "metric", alt.Tooltip("value:Q", format=".3f")],
-                )
-                .properties(height=280)
-            )
-            st.altair_chart(chart, use_container_width=True)
-        else:
-            st.info("No query_style column found.")
-
+        render_kpi_group("Custom Metrics", custom_kpis, "custom")
     with right:
-        st.markdown("#### MRR Distribution")
-        if "custom_mrr" in df.columns:
-            hist = (
-                alt.Chart(df)
-                .mark_bar()
-                .encode(
-                    x=alt.X("custom_mrr:Q", bin=alt.Bin(maxbins=12), title="MRR"),
-                    y=alt.Y("count():Q", title="Testcases"),
-                    color=alt.value("#1d4ed8"),
-                    tooltip=[alt.Tooltip("count():Q", title="Count")],
-                )
-                .properties(height=280)
-            )
-            st.altair_chart(hist, use_container_width=True)
+        render_query_style_chart(
+            df,
+            metrics=["custom_mrr"],
+            label_map={"custom_mrr": "MRR"},
+            colors=["#2563eb"],
+            title="MRR by Query Style",
+            stacked=False,
+            y_domain=(0, 1),
+        )
+        render_query_style_chart(
+            df,
+            metrics=["custom_hit_rate"],
+            label_map={"custom_hit_rate": "Hit Rate"},
+            colors=["#0f766e"],
+            title="Hit Rate by Query Style",
+            stacked=False,
+            y_domain=(0, 1),
+        )
+
+    st.markdown("---")
+
+    st.markdown("### DeepEval Metrics")
+    left, spacer, right = st.columns([0.85, 0.08, 1.45])
+    with left:
+        render_kpi_group("DeepEval Metrics", deepeval_kpis, "deepeval")
+        metric_options = [""] + [label for label, _, _, _ in deepeval_kpis]
+        selected_label = st.radio(
+            "Select DeepEval metric",
+            metric_options,
+            index=0,
+            key="deepeval_metric_choice",
+            label_visibility="collapsed",
+        )
+        label_to_metric = {label: metric for label, _, _, metric in deepeval_kpis}
+        selected_metric = label_to_metric.get(selected_label, "")
+    with right:
+        if not selected_metric:
+            st.info("Click a DeepEval metric to show its chart.")
         else:
-            st.info("No custom_mrr column found.")
+            deepeval_colors = {
+                "deepeval_contextual_precision": "#0f766e",
+                "deepeval_contextual_recall": "#14b8a6",
+                "deepeval_contextual_relevancy": "#5eead4",
+            }
+            deepeval_labels = {metric: label for label, _, _, metric in deepeval_kpis}
+            label = deepeval_labels.get(selected_metric, selected_metric)
+            color = deepeval_colors.get(selected_metric, "#0f766e")
+            render_query_style_chart(
+                df,
+                metrics=[selected_metric],
+                label_map={selected_metric: label},
+                colors=[color],
+                title=f"{label} by Query Style",
+                stacked=False,
+                y_domain=(0, 1),
+            )
 
+    st.markdown("---")
 
-def render_quality_breakdown(df: pd.DataFrame) -> None:
-    col1, col2 = st.columns(2)
+    st.markdown("### RAGAS Metrics")
+    st.markdown("Click a KPI to update the chart.")
+    selected_metric = st.session_state.get("ragas_selected_metric", ragas_kpis[0][3])
+    ragas_colors = {
+        "ragas_context_precision": "#f97316",
+        "ragas_context_recall": "#fb923c",
+        "ragas_context_entity_recall": "#fdba74",
+    }
+    ragas_labels = {metric: label for label, _, _, metric in ragas_kpis}
 
-    with col1:
-        st.markdown("#### DeepEval Signals")
-        if {"deepeval_contextual_precision", "deepeval_contextual_recall", "deepeval_contextual_relevancy"}.issubset(
-            df.columns
+    kpi_cols = st.columns(len(ragas_kpis))
+    for col, (label, value, fmt, metric) in zip(kpi_cols, ragas_kpis):
+        if pd.isna(value):
+            display = "N/A"
+        elif fmt == "percent":
+            display = f"{value:.2%}"
+        else:
+            display = f"{value:.4f}"
+        button_label = f"{label}: {display}"
+        if col.button(
+            button_label,
+            key=f"ragas_kpi_{metric}",
+            type="primary" if metric == selected_metric else "secondary",
+            use_container_width=True,
         ):
-            deepeval = df[["deepeval_contextual_precision", "deepeval_contextual_recall", "deepeval_contextual_relevancy"]]
-            deepeval = deepeval.mean().reset_index()
-            deepeval.columns = ["metric", "value"]
-            chart = (
-                alt.Chart(deepeval)
-                .mark_bar(cornerRadiusTopLeft=4, cornerRadiusTopRight=4)
-                .encode(
-                    x=alt.X("metric:N", title=""),
-                    y=alt.Y("value:Q", title="Average"),
-                    color=alt.value("#0f766e"),
-                    tooltip=["metric", alt.Tooltip("value:Q", format=".3f")],
-                )
-                .properties(height=240)
-            )
-            st.altair_chart(chart, use_container_width=True)
-        else:
-            st.info("DeepEval metrics not present.")
+            st.session_state["ragas_selected_metric"] = metric
+            selected_metric = metric
 
-    with col2:
-        st.markdown("#### RAGAS Signals")
-        if {"ragas_context_precision", "ragas_context_recall", "ragas_context_entity_recall"}.issubset(df.columns):
-            ragas = df[["ragas_context_precision", "ragas_context_recall", "ragas_context_entity_recall"]]
-            ragas = ragas.mean().reset_index()
-            ragas.columns = ["metric", "value"]
-            chart = (
-                alt.Chart(ragas)
-                .mark_bar(cornerRadiusTopLeft=4, cornerRadiusTopRight=4)
-                .encode(
-                    x=alt.X("metric:N", title=""),
-                    y=alt.Y("value:Q", title="Average"),
-                    color=alt.value("#f97316"),
-                    tooltip=["metric", alt.Tooltip("value:Q", format=".3f")],
-                )
-                .properties(height=240)
-            )
-            st.altair_chart(chart, use_container_width=True)
-        else:
-            st.info("RAGAS metrics not present.")
+    label = ragas_labels.get(selected_metric, selected_metric)
+    color = ragas_colors.get(selected_metric, "#f97316")
+    render_query_style_chart(
+        df,
+        metrics=[selected_metric],
+        label_map={selected_metric: label},
+        colors=[color],
+        title=f"{label} by Query Style",
+        stacked=False,
+        y_domain=(0, 1),
+    )
 
 
 def render_filters(df: pd.DataFrame) -> pd.DataFrame:
@@ -618,15 +685,7 @@ def main() -> None:
 
     with metrics_tab:
         st.markdown("### Global Metrics")
-        render_kpis(filtered_df)
-
-        st.markdown("---")
-
-        st.markdown("### Global Breakdown")
-        render_global_charts(filtered_df)
-
-        st.markdown("### Quality Signals")
-        render_quality_breakdown(filtered_df)
+        render_global_sections(filtered_df)
 
         st.markdown("### Export")
         st.download_button(

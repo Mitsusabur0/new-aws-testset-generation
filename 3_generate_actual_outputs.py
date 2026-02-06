@@ -11,14 +11,17 @@ from botocore.exceptions import ClientError
 import config
 
 # --- CONFIG ---
-INPUT_CSV_PATH = os.getenv(
-    "ACTUAL_INPUT_CSV_PATH",
-    "outputs/test/testset_with_expected_outputs.csv"
-)
-OUTPUT_CSV_PATH = os.getenv(
-    "ACTUAL_OUTPUT_CSV_PATH",
-    "outputs/test/testset_with_actual_outputs.csv"
-)
+# INPUT_CSV_PATH = os.getenv(
+#     "ACTUAL_INPUT_CSV_PATH",
+#     "outputs/subset/2_testset_with_expected_outputs.csv"
+# )
+# OUTPUT_CSV_PATH = os.getenv(
+#     "ACTUAL_OUTPUT_CSV_PATH",
+#     "outputs/subset/3_testset_with_actual_outputs.csv"
+# )
+INPUT_CSV_PATH = "outputs/subset/2_testset_with_expected_outputs.csv"
+OUTPUT_CSV_PATH = "outputs/subset/3_testset_with_actual_outputs.csv"
+
 AWS_REGION = os.getenv("ACTUAL_OUTPUT_AWS_REGION", config.AWS_REGION)
 AWS_PROFILE_SANDBOX = os.getenv("ACTUAL_OUTPUT_AWS_PROFILE", config.AWS_PROFILE_SANDBOX)
 AGENT_ID = os.getenv("ACTUAL_OUTPUT_AGENT_ID", "UKQEMRZQUS")

@@ -92,7 +92,8 @@ def retrieve_contexts(query, client, error_log):
 def main():
     print(f"Loading {config.RETRIEVER_INPUT_CSV}...")
     try:
-        df = pd.read_csv(config.RETRIEVER_INPUT_CSV)
+        # df = pd.read_csv(config.RETRIEVER_INPUT_CSV)
+        df = pd.read_csv("outputs/subset/3_testset_with_actual_outputs.csv")
     except FileNotFoundError:
         print("Input file not found. Run File 1 first.")
         return
@@ -120,7 +121,8 @@ def main():
     df['retrieved_contexts'] = retrieved_data
     df['retrieved_file'] = retrieved_files_data
     
-    df.to_csv(config.OUTPUT_EVALSET_CSV, index=False)
+    # df.to_csv(config.OUTPUT_EVALSET_CSV, index=False)
+    df.to_csv("outputs/subset/4_evalset.csv", index=False)
     print(f"Retrieval complete. Saved to {config.OUTPUT_EVALSET_CSV}")
 
     if error_log:

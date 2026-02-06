@@ -17,14 +17,17 @@ from ragas.metrics.collections import (
 import config
 
 # --- CONFIG ---
-INPUT_CSV_PATH = os.getenv(
-    "RAGAS_INPUT_CSV",
-    "outputs/test/testset_with_deepeval_metrics.csv",
-)
-OUTPUT_CSV_PATH = os.getenv(
-    "RAGAS_OUTPUT_CSV",
-    "outputs/test/eval_set_deep_ragas.csv",
-)
+# INPUT_CSV_PATH = os.getenv(
+#     "RAGAS_INPUT_CSV",
+#     "outputs/test/testset_with_deepeval_metrics.csv",
+# )
+# OUTPUT_CSV_PATH = os.getenv(
+#     "RAGAS_OUTPUT_CSV",
+#     "outputs/test/eval_set_deep_ragas.csv",
+# )
+INPUT_CSV_PATH = "outputs/subset/4_evalset.csv"
+OUTPUT_CSV_PATH = "outputs/subset/6_evalset.csv"
+
 RAGAS_MODEL_ID = os.getenv("RAGAS_MODEL_ID", "openai.gpt-oss-120b-1:0")
 RAGAS_REGION = os.getenv("RAGAS_REGION", config.AWS_REGION)
 RAGAS_TEMPERATURE = float(os.getenv("RAGAS_TEMPERATURE", "0.4"))
@@ -45,6 +48,7 @@ llm = llm_factory(
     provider="litellm",
     client=litellm.acompletion,
     temperature=RAGAS_TEMPERATURE,
+    max_tokens=15000
 )
 
 
@@ -82,7 +86,9 @@ async def main():
         print(f"Input file not found: {INPUT_CSV_PATH}")
         return
 
-    df = pd.read_csv(INPUT_CSV_PATH)
+    # Resume behavior: if output exists, continue from it; otherwise start from input.
+    source_path = OUTPUT_CSV_PATH if os.path.exists(OUTPUT_CSV_PATH) else INPUT_CSV_PATH
+    df = pd.read_csv(source_path)
 
     if "retrieved_contexts" not in df.columns:
         print("Missing column 'retrieved_contexts'. Run retriever first.")
@@ -96,6 +102,15 @@ async def main():
 
     precision_metric, recall_metric, entity_recall_metric = build_metrics()
 
+    def is_filled(value):
+        if value is None:
+            return False
+        if isinstance(value, float) and pd.isna(value):
+            return False
+        if isinstance(value, str) and not value.strip():
+            return False
+        return True
+
     precision_scores = []
     recall_scores = []
     entity_recall_scores = []
@@ -106,6 +121,17 @@ async def main():
         reference = (row.get("expected_output") or "").strip()
         retrieved_contexts = parse_list_column(row.get("retrieved_contexts", []))
         print(retrieved_contexts)
+
+        existing_precision = row.get("ragas_context_precision")
+        existing_recall = row.get("ragas_context_recall")
+        existing_entity_recall = row.get("ragas_context_entity_recall")
+
+        if is_filled(existing_precision) and is_filled(existing_recall) and is_filled(existing_entity_recall):
+            precision_scores.append(existing_precision)
+            recall_scores.append(existing_recall)
+            entity_recall_scores.append(existing_entity_recall)
+            print(f"[{idx + 1}/{len(df)}] RAGAS metrics already filled, skipped")
+            continue
 
         try:
             precision_result = await precision_metric.ascore(
@@ -132,9 +158,9 @@ async def main():
                 "row": int(idx),
                 "error": str(e),
             })
-            precision_scores.append(None)
-            recall_scores.append(None)
-            entity_recall_scores.append(None)
+            precision_scores.append(existing_precision if is_filled(existing_precision) else None)
+            recall_scores.append(existing_recall if is_filled(existing_recall) else None)
+            entity_recall_scores.append(existing_entity_recall if is_filled(existing_entity_recall) else None)
 
         print(f"[{idx + 1}/{len(df)}] RAGAS metrics computed")
 

@@ -16,12 +16,18 @@ from deepeval.test_case import LLMTestCase
 import config
 
 # --- CONFIG ---
-INPUT_CSV_PATH = os.getenv("DEEPEVAL_INPUT_CSV", config.OUTPUT_EVALSET_CSV)
-# INPUT_CSV_PATH = "outputs/test/testset_with_actual_outputs.csv"
-OUTPUT_CSV_PATH = os.getenv(
-    "DEEPEVAL_OUTPUT_CSV",
-    "outputs/test/testset_with_deepeval_metrics.csv"
-)
+# INPUT_CSV_PATH = os.getenv("DEEPEVAL_INPUT_CSV", config.OUTPUT_EVALSET_CSV)
+# OUTPUT_CSV_PATH = os.getenv(
+#     "DEEPEVAL_OUTPUT_CSV",
+#     "outputs/test/testset_with_deepeval_metrics.csv"
+# )
+
+
+INPUT_CSV_PATH = "outputs/subset/4_evalset.csv"
+OUTPUT_CSV_PATH = "outputs/subset/4_evalset.csv"
+
+
+
 DEEPEVAL_MODEL_ID = os.getenv("DEEPEVAL_MODEL_ID", config.MODEL_ID)
 DEEPEVAL_REGION = os.getenv("DEEPEVAL_REGION", config.AWS_REGION)
 THRESHOLD = float(os.getenv("DEEPEVAL_THRESHOLD", "0.7"))

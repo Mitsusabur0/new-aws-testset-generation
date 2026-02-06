@@ -5,10 +5,10 @@ KB_FOLDER = os.getenv("KB_FOLDER", "./single_file_testfolder")
 # KB_FOLDER = os.getenv("KB_FOLDER", "./gold_full")
 OUTPUT_TESTSET_CSV = os.getenv("OUTPUT_TESTSET_CSV", "outputs/test/testset.csv")
 RETRIEVER_INPUT_CSV = os.getenv("RETRIEVER_INPUT_CSV", "outputs/test/testset_with_actual_outputs.csv")
-OUTPUT_EVALSET_CSV = os.getenv("OUTPUT_EVALSET_CSV", "outputs/test/evaluation_set.csv")
-OUTPUT_RAGAS_DEEP_EVALSET_CSV = os.getenv("OUTPUT_RAGAS_DEEP_EVALSET_CSV", "outputs/test/Eval_set_deep_ragas.csv")
-OUTPUT_FULL_EVALSET_CSV = os.getenv("OUTPUT_FULL_EVALSET_CSV", "outputs/full/evaluation_set_full.csv")
-OUTPUT_RESULTS_PARQUET = os.getenv("OUTPUT_RESULTS_PARQUET", "outputs/full/testset_results.parquet")
+OUTPUT_EVALSET_CSV = os.getenv("OUTPUT_EVALSET_CSV", "outputs/subset/evaluation_set.csv")
+OUTPUT_RAGAS_DEEP_EVALSET_CSV = os.getenv("OUTPUT_RAGAS_DEEP_EVALSET_CSV", "outputs/subset/6_evalset.csv")
+OUTPUT_FULL_EVALSET_CSV = os.getenv("OUTPUT_FULL_EVALSET_CSV", "outputs/subset/evaluation_set_full.csv")
+OUTPUT_RESULTS_PARQUET = os.getenv("OUTPUT_RESULTS_PARQUET", "outputs/subset/testset_results.parquet")
 
 # --- AWS CONFIG ---
 AWS_REGION = os.getenv("AWS_REGION", "us-east-1")
@@ -34,7 +34,7 @@ OUTPUT_PRICE = float(os.getenv("OUTPUT_PRICE", "0.0006"))
 
 # --- RETRIEVAL / EVAL ---
 TOP_K = int(os.getenv("TOP_K", "2"))
-EVAL_K = int(os.getenv("EVAL_K", "3"))
+EVAL_K = int(os.getenv("EVAL_K", "2"))
 
 # --- REPRODUCIBILITY ---
 SEED = int(os.getenv("SEED", "42"))
